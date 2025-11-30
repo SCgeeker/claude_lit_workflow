@@ -482,12 +482,12 @@ def main():
                 if card_data:
                     # 添加到知識庫
                     add_result = kb.add_zettel_card(card_data)
-                    if add_result.status == 'inserted':
+                    if add_result['status'] == 'inserted':
                         added_count += 1
                         # 建立論文-卡片關聯
-                        if paper_id and add_result.card_id > 0:
-                            kb.link_paper_to_zettel(paper_id, add_result.card_id, 1.0)
-                    elif add_result.status == 'duplicate':
+                        if paper_id and add_result['card_id'] > 0:
+                            kb.link_paper_to_zettel(paper_id, add_result['card_id'], 1.0)
+                    elif add_result['status'] == 'duplicate':
                         skipped_count += 1
 
             print(f"   ✅ 新增 {added_count} 張卡片")
