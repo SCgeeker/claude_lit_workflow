@@ -58,7 +58,12 @@
       "Bash(uv run kb --help:*)",
       "Bash(uv run slides --help:*)",
       "Bash(uv run:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git -C \"D:\\core\\research\\claude_lit_workflow\" diff generate_zettel.py)",
+      "Bash(git -C \"D:\\core\\research\\claude_lit_workflow\" add generate_zettel.py)",
+      "Bash(git -C \"D:\\core\\research\\claude_lit_workflow\" commit -m \"$(cat <<''EOF''\nfix: 修正 add_zettel_card 回傳值的存取方式\n\n將 NamedTuple 屬性存取改為字典存取，修復 zettel 生成時的錯誤\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git -C \"D:\\core\\research\\claude_lit_workflow\" status)",
+      "Bash(git -C \"D:\\core\\research\\claude_lit_workflow\" log --oneline -5)"
     ],
     "additionalDirectories": [
       "D:\\Apps\\LLM\\SciMaker",

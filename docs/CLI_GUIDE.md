@@ -98,13 +98,16 @@ uv run analyze paper.pdf --doi "10.xxxx/xxxxx" --add-to-kb
 |------|------|--------|
 | `<pdf_path>` | PDF 檔案路徑 | 必填 |
 | `--add-to-kb` | 加入知識庫 | False |
-| `--format` | 輸出格式 (text/json/both) | text |
+| `--format` | 輸出格式 (markdown/json/both) | markdown |
 | `--output-json` | JSON 輸出路徑 | - |
 | `--bib` | BibTeX 檔案路徑 | - |
 | `--ris` | RIS 檔案路徑 | - |
 | `--citekey` | 手動指定 citekey | - |
 | `--doi` | 指定 DOI（優先查詢 CrossRef）| - |
 | `--validate` | 驗證元數據品質 | False |
+| `--auto-fix` | 自動修復缺失元數據 | False |
+| `--min-score` | 最低質量分數 (配合 --validate) | 60 |
+| `--max-chars` | 最大讀取字元數 | 50000 |
 
 ---
 
@@ -263,18 +266,21 @@ uv run kb vector-cleanup --dry-run        # 預覽模式
 | `list` | 列出論文 | ✅ |
 | `search` | 關鍵詞搜索 | ✅ |
 | `semantic-search` | 語義搜索 | ✅ |
-| `similar` | 相似論文 | ✅ |
+| `similar` | 相似論文/卡片 | ✅ |
 | `hybrid-search` | 混合搜索 | ✅ |
 | `get` / `show` | 查看詳情 | ✅ |
 | `delete` | 刪除論文 | ✅ |
 | `update` | 更新元數據 | ✅ |
+| `export-zettel` | 匯出 Zettel 卡片 | ✅ |
 | `import-zettel` | 匯入 Zettel 資料夾 | ✅ |
 | `import-zettel-all` | 批次匯入所有 Zettel | ✅ |
+| `auto-link` | 自動建立卡片連結 | ✅ |
+| `check-llm` | 檢查 LLM 狀態 | ✅ |
 | `vector-status` | 檢查向量庫狀態 | ✅ |
 | `vector-reset` | 重置向量庫 | ✅ |
 | `vector-sync` | 同步向量庫 | ✅ |
 | `vector-cleanup` | 清理孤立向量 | ✅ |
-| `visualize-network` | 概念網絡 | ✅ (暫停使用) |
+| `visualize-network` | 概念網絡 | ✅ (Phase 2.2) |
 
 ---
 
@@ -300,7 +306,6 @@ uv run slides "Embodied Cognition" --pdf paper.pdf --analyze-first
 ```bash
 # 指定學術風格
 uv run slides "主題" --pdf paper.pdf --style modern_academic
-uv run slides "主題" --pdf paper.pdf --style zettelkasten
 
 # 指定詳細程度
 uv run slides "主題" --pdf paper.pdf --detail comprehensive
@@ -324,6 +329,10 @@ uv run slides "主題" --pdf paper.pdf --llm-provider ollama --model llama3.3
 
 # 使用 OpenAI
 uv run slides "主題" --pdf paper.pdf --llm-provider openai --model gpt-4
+
+# 使用詳細參數
+uv run slides "主題" --pdf paper.pdf --selection-strategy quality_first --usage-report
+
 ```
 
 ### 自訂需求
@@ -357,6 +366,10 @@ uv run slides "主題" --pdf paper.pdf --no-custom
 | `--llm-provider` | LLM 提供者 | auto |
 | `--model` | 模型名稱 | - |
 | `--output` | 輸出路徑 | 自動生成 |
+| `--selection-strategy` | 模型選擇策略 | balanced |
+| `--usage-report` | 生成使用報告 | False |
+| `--api-key` | API 金鑰 | - |
+| `--ollama-url` | Ollama URL | http://localhost:11434 |
 
 ### 可用風格
 
@@ -369,7 +382,6 @@ uv run slides "主題" --pdf paper.pdf --no-custom
 | `literature_review` | 文獻回顧 |
 | `case_analysis` | 案例分析 |
 | `teaching` | 教學導向 |
-| `zettelkasten` | 原子化筆記 |
 
 ### 詳細程度
 
@@ -399,8 +411,17 @@ uv run embeddings
 uv run embeddings --provider gemini    # 使用 Gemini（推薦）
 uv run embeddings --provider ollama    # 使用 Ollama 本地
 
-# 只處理新增的論文
-uv run embeddings --incremental
+# 僅處理論文
+uv run embeddings --papers-only
+
+# 僅處理 Zettel 卡片
+uv run embeddings --zettel-only
+
+# 指定處理數量（測試用）
+uv run embeddings --limit 10
+
+# 自動確認（無人值守模式）
+uv run embeddings --yes
 ```
 
 ### 參數說明
@@ -408,8 +429,11 @@ uv run embeddings --incremental
 | 參數 | 說明 | 預設值 |
 |------|------|--------|
 | `--provider` | Embedder 提供者 | gemini |
-| `--incremental` | 只處理新增 | False |
-| `--batch-size` | 批次大小 | 10 |
+| `--papers-only` | 僅處理論文 | False |
+| `--zettel-only` | 僅處理 Zettel | False |
+| `--limit` | 處理數量限制 | - |
+| `--stats` | 僅顯示統計 | False |
+| `--yes` / `-y` | 自動確認 | False |
 
 ---
 
@@ -437,6 +461,9 @@ uv run zettel --pdf paper.pdf --no-add-to-kb
 
 # 啟用跨論文連結
 uv run zettel --pdf paper.pdf --cross-link
+
+# 強制重新生成（覆蓋舊卡片）
+uv run zettel --from-kb 42 --force
 ```
 
 ### LLM 選擇
@@ -464,7 +491,7 @@ uv run zettel --pdf paper.pdf --no-custom
 
 ### 參數說明
 
-| 參數 | 說明 | 預設值 |
+| 参数 | 说明 | 预设值 |
 |------|------|--------|
 | `--pdf` | PDF 檔案路徑（與 --from-kb 二擇一）| - |
 | `--from-kb` | 知識庫論文 ID（與 --pdf 二擇一）| - |
@@ -475,9 +502,11 @@ uv run zettel --pdf paper.pdf --no-custom
 | `--no-custom` | 忽略預設需求檔案 | False |
 | `--no-add-to-kb` | 不加入知識庫 | False |
 | `--cross-link` | 啟用跨論文連結 | False |
+| `--force` | 強制重新生成 | False |
 | `--no-embed` | 跳過向量嵌入 | False |
 | `--llm-provider` | LLM 提供者 | auto |
 | `--model` | 模型名稱 | - |
+| `--selection-strategy` | 模型選擇策略 | balanced |
 | `--output` | 輸出路徑 | 自動生成 |
 
 ### 詳細程度
