@@ -34,9 +34,37 @@
               "icon": "lucide-file",
               "title": "Wu-2020_classic_academic_20251208_123112"
             }
+          },
+          {
+            "id": "c44f8ba83ca11f76",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Friedrich-2025_literature_review_20251210_112154.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Friedrich-2025_literature_review_20251210_112154"
+            }
+          },
+          {
+            "id": "43e43440e251bd08",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_index.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "zettel_index"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -186,14 +214,37 @@
       "slides-extended:Show slide preview": false
     }
   },
-  "active": "42ccb55b34748632",
+  "active": "43e43440e251bd08",
   "lastOpenFiles": [
-    "Aly-2023_literature_review_20251208_121441.md",
-    "Wu-2020_classic_academic_20251208_123112.md",
-    "Metabolic considerations for cognitive modeling_modern_academic_20251204_091156.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-008.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-013.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-028.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-012.md",
+    "Friedrich-2025_literature_review_20251210_112154.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_index.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-030.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-029.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-027.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-026.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-025.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-024.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-023.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-022.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-021.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-019.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-020.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-018.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-017.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-016.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-015.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-014.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-011.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-010.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-009.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards/Friedrich-2025-005.md",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210/zettel_cards",
+    "zettelkasten_notes/zettel_Friedrich-2025_20251210",
     "Aly-2023.pptx",
-    "output.md",
-    "Aly-2023_comprehensive.md",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/Metabolic considerations for cognitive modeling.pdf",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/upgreek.js",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/units.js",
@@ -201,10 +252,6 @@
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/unicode.js",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/textmacros.js",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/textcomp.js",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/texhtml.js",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/input/tex/extensions/tagformat.js",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/README.md",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/math/mathjax/CONTRIBUTING.md",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/whiteboard.png",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/sponge.png",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/chalk-yellow.png",
@@ -214,25 +261,6 @@
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/chalk-orange.png",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/chalk-green.png",
     "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/chalk-blue.png",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/boardmarker-red.png",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/menu/README.md",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/menu/CONTRIBUTING.md",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/customcontrols/README.md",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chart/README.md",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/README.md",
-    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/dist/css/theme/README.md",
-    "zettelkasten_notes/zettel_Zeelenberg-2024_20251124/zettel_index.md",
-    "zettelkasten_notes/zettel_Zwaan-2002_20251124/zettel_index.md",
-    "zettelkasten_notes/zettel_Bocanegra-2022_20251124/zettel_index.md",
-    "zettelkasten_notes/zettel_Adams-2020_20251123/zettel_index.md",
-    "zettelkasten_notes/zettel_Vigly-2025_20251123/zettel_index.md",
-    "zettelkasten_notes/zettel_Woodley-2025_20251123/zettel_index.md",
-    "PHASE23_THREE_MODEL_COMPARISON_20251110.md",
-    "zettelkasten_notes/zettel_Jones-2024_20251112_deepseek_r1/zettel_index.md",
-    "zettelkasten_notes/zettel_Jones-2024_20251112_gemini_2.0_flash_exp/zettel_index.md",
-    "zettelkasten_notes/zettel_Jones-2024_20251112_llama_3.3_70b_instruct/zettel_index.md",
-    "zettelkasten_notes/zettel_Jones-2024_20251112/zettel_index.md",
-    "zettelkasten_notes/zettel_Jones-2024_20251110_llama/zettel_index.md",
-    "zettelkasten_notes/zettel_Jones-2024_20251112_llama_3.3_70b_instruct/zettel_cards/Jones-2024-020.md"
+    "export/Metabolic considerations for cognitive modeling_modern_academic_20251204_091156/plugin/chalkboard/img/boardmarker-red.png"
   ]
 }

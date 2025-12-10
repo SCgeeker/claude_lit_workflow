@@ -4,11 +4,55 @@
 
 # === 模型定義 ===
 models:
-  # Google Gemini - 最優先（免費額度）
-  gemini:
+  # Google Gemini 2.5 Flash - 預設 (速度快/成本低)
+  gemini_flash:
+    provider: "google"
+    model_name: "gemini-2.5-flash"
+    priority: 1
+    free_quota: false
+    cost_per_1k_tokens:
+      input: 0.0001   # $0.10 / 1M
+      output: 0.0004  # $0.40 / 1M
+    quality_score: 4.5
+    speed: "fast"
+    best_for:
+      - "batch_processing"
+      - "initial_analysis"
+      - "zettelkasten"
+      - "slides_standard"
+    supports_chinese: true
+    max_context: 1000000
+    features:
+      - "low_cost"
+      - "high_throughput"
+
+  # Google Gemini 2.5 Pro - 高品質 (複雜推理)
+  gemini_pro:
+    provider: "google"
+    model_name: "gemini-2.5-pro"
+    priority: 2
+    free_quota: false
+    cost_per_1k_tokens:
+      input: 0.00125  # $1.25 / 1M
+      output: 0.01    # $10.00 / 1M
+    quality_score: 5
+    speed: "medium"
+    best_for:
+      - "deep_analysis"
+      - "research_methods"
+      - "literature_review"
+      - "complex_reasoning"
+    supports_chinese: true
+    max_context: 2000000
+    features:
+      - "reasoning"
+      - "long_context"
+
+  # Experimantal (Legacy)
+  gemini_exp:
     provider: "google"
     model_name: "gemini-2.0-flash-exp"
-    priority: 1
+    priority: 9
     free_quota: true
     daily_limit: 100  # 估計的每日免費調用次數
     quality_score: 5
@@ -92,24 +136,24 @@ models:
 task_model_mapping:
   # Zettelkasten原子筆記
   zettelkasten:
-    preferred: ["gemini", "claude_haiku"]
-    fallback: ["gpt_oss"]
+    preferred: ["gemini_flash", "gemini_pro"]
+    fallback: ["claude_haiku", "gpt_oss"]
     avoid: ["minimax_m2"]  # JSON格式問題
 
   # 學術簡報生成
   academic_slides:
-    preferred: ["gemini", "claude_haiku"]
-    fallback: ["gpt_oss", "minimax_m2"]
+    preferred: ["gemini_pro", "gemini_flash"]
+    fallback: ["claude_haiku", "gpt_oss"]
 
   # 批次處理
   batch_processing:
-    preferred: ["claude_haiku", "gemini"]
+    preferred: ["gemini_flash", "claude_haiku"]
     fallback: ["gpt_oss"]
     avoid: ["minimax_m2"]  # 太慢
 
   # 文獻回顧
   literature_review:
-    preferred: ["gemini", "claude_haiku"]
+    preferred: ["gemini_pro", "gemini_flash"]
     fallback: ["gpt_oss"]
 
   # 教學材料

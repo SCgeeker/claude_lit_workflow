@@ -10,10 +10,10 @@ import argparse
 from pathlib import Path
 
 # 設置UTF-8編碼（Windows相容性）
-if sys.platform == 'win32':
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# if sys.platform == 'win32':
+#     import io
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+#     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -32,6 +32,8 @@ try:
     from src.analyzers import RelationFinder
 except ImportError:
     RelationFinder = None
+
+from src.utils.logger import logger
 
 import sqlite3
 import json
@@ -2681,7 +2683,15 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    args.func(args)
+    try:
+        logger.info(f"Executing command: {args.command}, Args: {vars(args)}")
+        args.func(args)
+    except Exception as e:
+        logger.critical(f"Unhandled exception in kb_manage command '{args.command}': {e}", exc_info=True)
+        print(f"\n❌ 執行命令 '{args.command}' 時發生錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

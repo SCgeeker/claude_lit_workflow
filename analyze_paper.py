@@ -18,13 +18,16 @@ import json
 import os
 
 # 設置UTF-8編碼（Windows相容性）
-if sys.platform == 'win32':
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# if sys.platform == 'win32':
+#     import io
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+#     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 添加src到路徑
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Import logger
+from src.utils.logger import logger
 
 from src.extractors import PDFExtractor
 from src.knowledge_base import KnowledgeBaseManager
@@ -371,10 +374,15 @@ def main():
 
     args = parser.parse_args()
 
+    # Log execution start
+    logger.info(f"Started analysis for: {args.pdf_path} (Args: {vars(args)})")
+
     # 檢查文件是否存在
     pdf_path = Path(args.pdf_path)
     if not pdf_path.exists():
-        print(f"❌ 錯誤: 找不到文件 {pdf_path}")
+        msg = f"❌ 錯誤: 找不到文件 {pdf_path}"
+        print(msg)
+        logger.error(f"File not found: {pdf_path}")
         sys.exit(1)
 
     print(f"\n{'='*60}")
@@ -568,4 +576,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.critical(f"Unhandled exception in analyze_paper: {e}", exc_info=True)
+        print(f"❌ 發生未預期的錯誤: {e}")
+        sys.exit(1)

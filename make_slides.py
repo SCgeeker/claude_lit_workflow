@@ -24,6 +24,7 @@ from knowledge_base import KnowledgeBaseManager
 from utils.prompt_loader import load_custom_requirements
 import subprocess
 import json
+from src.utils.logger import logger
 
 
 # 可用的學術風格（7種）
@@ -158,6 +159,7 @@ def main():
                        help='生成使用報告（每日和週報）')
 
     args = parser.parse_args()
+    logger.info(f"Started slides generation. Topic: {args.topic}, PDF: {args.pdf}, KB: {args.from_kb}")
 
     # 如果只是列出選項
     if args.list_options:
@@ -440,6 +442,7 @@ def main():
         return 1
 
     except Exception as e:
+        logger.critical(f"Unhandled exception in make_slides: {e}", exc_info=True)
         print(f"\n❌ 未預期的錯誤：{e}")
         import traceback
         traceback.print_exc()
