@@ -112,3 +112,6 @@ Thumbs.db
 
 # Paper analysis notes (ensure this is at the end)
 **/papers/*.md
+
+# Claude Code 本地設定
+.claude/settings.local.json
