@@ -4,21 +4,23 @@
 
 ## 專案概述
 
-**知識生產器 (Claude Lit Workflow)** 是一個以 Claude Code 為核心的學術文獻處理系統。
+**Claude Lit Workflow** 是整合筆記 App 的論文工作流套件。
+從 PDF 生成投影片與 Zettelkasten 原子卡片，輸出純 Markdown，可直接匯入 Obsidian 等筆記工具。
 
-### 核心功能
+### 核心功能（活躍開發）
 
-- **論文分析**: PDF 提取、元數據解析、知識庫管理
-- **內容生成**: 投影片生成、Zettelkasten 卡片生成
-- **知識查詢**: 全文搜索、語義搜索、相似內容發現
+- **投影片生成** (`uv run slides`): PDF → Markdown 投影片（Obsidian Slides Extended 相容）
+- **原子卡片生成** (`uv run zettel`): PDF / slides → Zettelkasten 卡片
+- **設定助手** (`uv run setup`): 偵測 LLM 連線、給出設定建議
 
-### 目前開發重點
+### 暫停功能
 
-1. **單篇論文處理流程優化** - 手動 uv 指令操作
-2. **Citekey 系統** - 支援多種書目管理平台
-3. **ProgramVerse 整合** - 匯出/匯入 Zettelkasten 卡片
+> 知識管理由筆記 App 接管，以下工具暫停開發，程式碼保留。
 
-> **暫停功能**: 概念網絡分析（Phase 2.4 RelationFinder 改進）
+- `analyze_paper.py` (`uv run analyze`) — 論文分析 + 知識庫收錄
+- `kb_manage.py` (`uv run kb`) — 知識庫管理
+- `generate_embeddings.py` (`uv run embeddings`) — 向量嵌入
+- `src/analyzers/` — 概念網絡分析（Phase 2.4）
 
 ---
 
@@ -26,22 +28,22 @@
 
 ```
 claude_lit_workflow/
-├── analyze_paper.py       # 論文分析 CLI
+├── setup.py               # 設定助手 CLI ← 新增
 ├── make_slides.py         # 投影片生成 CLI
-├── kb_manage.py           # 知識庫管理 CLI
-├── generate_embeddings.py # 向量嵌入 CLI
 ├── generate_zettel.py     # Zettel 生成 CLI
-├── pyproject.toml         # uv 專案配置
+├── generate_zettel_batch.py # 批次 Zettel 生成
 │
+├── analyze_paper.py       # [暫停] 論文分析 CLI
+├── kb_manage.py           # [暫停] 知識庫管理 CLI
+├── generate_embeddings.py # [暫停] 向量嵌入 CLI
+│
+├── pyproject.toml         # uv 專案配置
 ├── src/                   # 源碼模組 → src/CLAUDE.md
-├── knowledge_base/        # 知識庫 → knowledge_base/CLAUDE.md
 ├── output/                # 輸出 → output/CLAUDE.md
 ├── templates/             # 模板 → templates/CLAUDE.md
 ├── config/                # 配置 → config/CLAUDE.md
 └── docs/                  # 文檔 → docs/CLAUDE.md
 ```
-
-> 各目錄詳細說明請參見對應的 `CLAUDE.md`
 
 ---
 
@@ -50,29 +52,24 @@ claude_lit_workflow/
 ### 環境設置
 
 ```bash
-cd D:\core\research\claude_lit_workflow
 uv sync
+cp .env.example .env   # 填入 API key
+uv run setup           # 確認 LLM 連線
 ```
 
 ### 核心指令
 
 ```bash
-# 論文分析
-uv run analyze paper.pdf --add-to-kb
-
-# 知識庫管理
-uv run kb list
-uv run kb search "關鍵詞"
-uv run kb semantic-search "語義查詢"
-
 # 投影片生成
-uv run slides "主題" --pdf paper.pdf
+uv run slides --pdf paper.pdf
+uv run slides --pdf paper.pdf --style modern_academic --detail comprehensive
 
 # Zettel 卡片生成
 uv run zettel --pdf paper.pdf
+uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
-# 向量嵌入
-uv run embeddings
+# 設定檢查
+uv run setup
 ```
 
 ### 完整指令說明
@@ -83,10 +80,7 @@ uv run embeddings
 
 ## 技術棧
 
-- **Python 3.10+**
-- **uv**: 套件管理
-- **SQLite**: 知識庫索引
-- **ChromaDB**: 向量資料庫
+- **Python 3.10+** / **uv**
 - **Jinja2**: Prompt 模板
 - **LLM**: Gemini, OpenAI, Anthropic, Ollama
 
@@ -97,9 +91,9 @@ uv run embeddings
 | Provider | 模型 | 用途 |
 |----------|------|------|
 | **Google Gemini** | gemini-2.0-flash-exp | 預設推薦 |
-| **Ollama** | llama3.3:70b | 本地運行 |
-| **OpenAI** | gpt-4 | 高品質輸出 |
-| **Anthropic** | claude-3-haiku | 快速低成本 |
+| **Anthropic** | claude-haiku-4-5 | 快速低成本 |
+| **OpenAI** | gpt-4o-mini | 通用 |
+| **Ollama** | llama3.2 | 本地運行 |
 
 ---
 
@@ -114,76 +108,38 @@ uv run embeddings
 ### Citekey 規範
 
 - 預設格式: `Author-Year`（如 `Barsalou-1999`）
-- 支援從 BibTeX/RIS 匯入
-- 詳見 [docs/CITEKEY_DESIGN_SPEC.md](docs/CITEKEY_DESIGN_SPEC.md)
+- 支援 `--citekey` 手動傳入（Zotero bib 場景）
+- 無 bib 檔時走 DOI / CrossRef 自動解析
 
 ### 輸出規範
 
-Zettelkasten 輸出結構：
 ```
+output/
+├── slides/
+│   └── {citekey}_{date}.md
+└── zettelkasten_notes/
+    └── zettel_{citekey}_{date}_{model}/
+        ├── zettel_index.md
+        └── zettel_cards/
+            ├── {citekey}-001.md
+            └── ...
+```
+
+---
+
+## 筆記 App 整合
+
+本工具輸出純 Markdown，可整合任何支援 Markdown 的筆記系統。
+
+```
+Claude Lit Workflow          筆記 App（Obsidian / ProgramVerse / 其他）
+────────────────────         ──────────────────────────────────────────
+output/slides/*.md      →   簡報筆記（Obsidian Slides Extended）
 output/zettelkasten_notes/
-└── zettel_{citekey}_{date}_{model}/
-    ├── zettel_index.md
-    └── zettel_cards/
-        ├── {citekey}-001.md
-        ├── {citekey}-002.md
-        └── ...
+        └──► 匯入腳本  →    Annotation / Zettelkasten 資料夾
 ```
 
 ---
 
-## 彈性整合個人知識管理系統
-
-本專案初期與 ProgramVerse 整合，多輪測試後，決定採用**平行開發**模式。公開版本預設能整合任何支援 Markdown 的個人知識管理系統。
-
-### 整合流程
-
-```
-Claude Lit Workflow          ProgramVerse
-────────────────────         ────────────
-output/zettelkasten_notes/
-        │
-        └──► import_zettel.py ──► 0️⃣Annotation/{citekey}/
-             (ProgramVerse 端)
-```
-
-### 相關文檔
-
-- [docs/EXPORT_FORMAT_SPEC.md](docs/EXPORT_FORMAT_SPEC.md) - 輸出格式規範
-- [docs/IMPORT_TOOL_SPEC.md](docs/IMPORT_TOOL_SPEC.md) - 匯入工具規格
-
----
-
-## 已完成功能（0.10.0）
-
-| 功能 | 狀態 | 說明 |
-|------|------|------|
-| `uv run zettel` | ✅ | Zettelkasten 卡片生成 CLI |
-| 自訂需求檔案 | ✅ | slides/zettel 支援 --custom-file |
-| `kb import-zettel` | ✅ | 匯入現有 Zettel 卡片 |
-| zettel_importer.py | ✅ | 批次匯入模組 |
-| citekey_resolver.py | ✅ | Citekey 解析模組 |
-| ris_parser.py | ✅ | RIS 格式支援 |
-| doi_resolver.py | ✅ | DOI/CrossRef 查詢 |
-| `kb update` | ✅ | 知識庫元數據更新 |
-| `kb delete` | ✅ | 論文刪除功能 |
-| DOI 優先查詢 | ✅ | analyze 自動使用 CrossRef 元數據 |
-
-## 待實作功能
-
-| 功能 | 優先級 | 說明 |
-|------|--------|------|
-| `--from-bib` 批次 | P2 | 從書目檔批次處理 |
-
----
-
-## 相關資源
-
-- **CLI 指南**: [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
-- **快速開始**: [docs/QUICKSTART.md](docs/QUICKSTART.md)
-- **故障排除**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-
----
-
-**版本**: 0.10.0
-**更新日期**: 2025-11-29
+**版本**: 0.11.0
+**更新日期**: 2026-03-30

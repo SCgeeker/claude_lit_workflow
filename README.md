@@ -1,87 +1,119 @@
 # Claude Lit Workflow
 
-學術文獻處理系統 - 論文分析、投影片生成、Zettelkasten 卡片管理
+整合筆記 App 的論文工作流套件 — 從 PDF 生成投影片與 Zettelkasten 原子卡片，輸出純 Markdown 可直接匯入 Obsidian 等筆記工具。
 
-## 功能
+## 核心功能
 
-- **論文分析** - PDF 提取、元數據解析、自動加入知識庫
-- **投影片生成** - 7 種學術風格、自動推斷主題
-- **Zettelkasten** - 原子化卡片生成、跨論文連結
-- **知識庫** - 全文搜索、語義搜索、向量嵌入
+- **投影片生成** — 7 種學術風格、5 種詳細程度，輸出 Obsidian Slides 相容格式
+- **原子卡片生成** — Zettelkasten 原子化卡片，支援跨論文連結
+- **自訂需求** — `config/custom_*.md` 定義領域術語與風格，自動載入
+
+## 設計定位
+
+```
+PDF 論文
+  │
+  ├─► uv run slides   →  Markdown 投影片（Obsidian Slides Extended 相容）
+  │        （人工編修，深度理解）
+  │
+  └─► uv run zettel   →  output/zettelkasten_notes/{citekey}/
+           （可搭配 --slides-file 使用編修後的投影片）
+                │
+                └──► 匯入筆記 App（Obsidian / ProgramVerse / 任何 Markdown App）
+```
+
+知識管理（搜索、連結、圖譜）由筆記 App 負責；本工具只負責**生成高品質 Markdown 內容**。
 
 ## 快速開始
 
+### 1. 安裝
+
 ```bash
-# 安裝
+git clone https://github.com/SCChen1005/claude_lit_workflow.git
 cd claude_lit_workflow
 uv sync
 ```
 
-### 生成簡報
+### 2. 設定 LLM
 
 ```bash
-# 從 PDF 生成投影片（主題自動從檔名推斷）
+cp .env.example .env   # Windows: copy .env.example .env
+# 編輯 .env，填入至少一個 API key
+uv run setup           # 自動偵測可用提供者，顯示設定建議
+```
+
+### 3. 使用
+
+```bash
+# 生成投影片
 uv run slides --pdf paper.pdf
 
-# 指定風格和詳細程度
-uv run slides --pdf paper.pdf --style modern_academic --detail comprehensive
-```
-
-### 生成 Zettel 卡片
-
-```bash
-# 從 PDF 生成原子化筆記卡片
+# 生成原子卡片
 uv run zettel --pdf paper.pdf
 
-# 從知識庫論文生成
-uv run zettel --from-kb 1
+# 結合投影片生成卡片（推薦）
+uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 ```
 
-### 分析論文
+## LLM 設定
+
+在 `.env` 填入任一提供者的 API key：
+
+| 提供者 | 環境變數 | 推薦模型 |
+|--------|----------|---------|
+| Google Gemini | `GOOGLE_API_KEY` | gemini-2.0-flash-exp |
+| Anthropic Claude | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
+| OpenAI | `OPENAI_API_KEY` | gpt-4o-mini |
+| Ollama（本地） | `OLLAMA_URL` | llama3.2 |
 
 ```bash
-# 分析 PDF 並加入知識庫
-uv run analyze paper.pdf --add-to-kb
-
-# 僅分析不加入知識庫
-uv run analyze paper.pdf
+# .env 範例
+GOOGLE_API_KEY=your-key
+DEFAULT_LLM_PROVIDER=google   # 或 auto（自動偵測）
 ```
 
-### 管理知識庫
-
-```bash
-# 列出所有論文
-uv run kb list
-
-# 搜索論文
-uv run kb search "關鍵詞"
-
-# 語義搜索
-uv run kb semantic-search "概念描述"
-```
+執行 `uv run setup` 確認連線狀態。
 
 ## CLI 指令總覽
 
-| 指令 | 功能 | 常用參數 |
-|------|------|----------|
-| `uv run slides` | 投影片生成 | `--pdf`, `--style`, `--detail` |
-| `uv run zettel` | Zettel 卡片生成 | `--pdf`, `--from-kb` |
-| `uv run analyze` | 論文分析 | `--add-to-kb`, `--doi` |
-| `uv run kb` | 知識庫管理 | `list`, `search`, `import-zettel` |
+| 指令 | 功能 |
+|------|------|
+| `uv run setup` | 偵測 LLM 連線，顯示設定建議 |
+| `uv run slides --pdf paper.pdf` | 從 PDF 生成投影片 |
+| `uv run zettel --pdf paper.pdf` | 從 PDF 生成原子卡片 |
+| `uv run zettel --slides-file slides.md` | 結合已編修的投影片生成卡片 |
 
-**進階功能**：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+`--style`、`--detail`、`--llm-provider` 等詳細參數：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 
-## 文檔
+## 自訂需求
 
-- [CLI 操作指南](docs/CLI_GUIDE.md) - 完整指令說明
-- [快速開始](docs/QUICKSTART.md)
-- [故障排除](docs/TROUBLESHOOTING.md)
+編輯以下檔案，定義你的研究領域術語與生成風格：
+
+- `config/custom_slides.md` — 投影片風格、術語對照表
+- `config/custom_zettel.md` — 卡片撰寫規則、術語對照表
+
+系統自動載入；使用 `--no-custom` 可跳過。
+
+## 輸出格式
+
+```
+output/
+├── slides/
+│   └── {citekey}_{date}.md          # Obsidian Slides 相容 Markdown
+└── zettelkasten_notes/
+    └── zettel_{citekey}_{date}_{model}/
+        ├── zettel_index.md
+        └── zettel_cards/
+            ├── {citekey}-001.md
+            ├── {citekey}-002.md
+            └── ...
+```
 
 ## 技術棧
 
 - Python 3.10+ / uv
-- SQLite + ChromaDB
-- Gemini / OpenAI / Ollama
+- Jinja2（Prompt 模板）
+- LLM：Gemini / OpenAI / Anthropic / Ollama
 
 ## 授權
 
@@ -89,4 +121,40 @@ MIT License
 
 ---
 
-**版本**: 0.10.1 | **更新**: 2025-11-29
+**版本**: 0.11.0 | **更新**: 2026-03-30
+
+---
+
+## 迭代紀錄
+
+### 2026-03-30 架構定位調整 + setup 工具
+
+**調整**：
+- 定位收斂為「筆記 App 的論文工作流外掛」，核心只有 `slides` + `zettel` 兩個工具
+- `analyze_paper.py`、`kb_manage.py`、`generate_embeddings.py` 標記暫停開發（bib 檢索與知識管理由筆記 App 接管）
+- 新增 `setup.py`（`uv run setup`）：自動偵測 LLM 提供者連線狀態，給出設定建議與工作流引導
+- `.env.example` 移除個人伺服器資訊，改為通用本地設定
+- `config/custom_slides.md`、`config/custom_zettel.md` 改為通用範本，術語對照表改為可填入的空白範例
+
+### 2026-03-21 slides 粗體邏輯修正
+
+**背景**：LLM 生成的 slides 粗體標記過多，影響後續 `zettel --slides-file` 的卡片生成品質。
+
+**修改**：
+- `templates/prompts/journal_club_template.jinja2`：粗體限定為論文關鍵詞及近義術語，每張投影片最多 1-2 個
+- `config/custom_slides.md`：明確禁止以粗體標記一般結論
+- `templates/prompts/zettelkasten_template.jinja2`：粗體從「必須對應卡片」改為「優先參考提示，原子性仍為主判斷」
+
+**工作流程定位**：
+```
+slides 生成 → 人工編修（沉浸理解）→ zettel --slides-file → 匯入筆記 App
+```
+
+---
+
+## 待討論項目
+
+| 項目 | 說明 |
+|------|------|
+| Obsidian Slides Extended 格式驗證 | 確認目前 slides 輸出與 `---` 分隔符相容性；theme frontmatter 需求 |
+| cite_key 雙場景文件 | 有 bib 檔（Zotero）用 `--citekey` 手傳；無 bib 檔走 DOI CrossRef 自動解析 |

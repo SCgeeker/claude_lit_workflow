@@ -56,11 +56,14 @@ dev = [
 
 [project.scripts]
 # 核心工具
-analyze = "analyze_paper:main"
+setup = "setup:main"
 slides = "make_slides:main"
+zettel = "generate_zettel:main"
+
+# 進階 / 暫停開發
+analyze = "analyze_paper:main"
 kb = "kb_manage:main"
 embeddings = "generate_embeddings:main"
-zettel = "generate_zettel:main"
 
 [build-system]
 requires = ["hatchling"]
