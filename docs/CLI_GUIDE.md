@@ -493,11 +493,17 @@ uv run zettel --pdf paper.pdf --llm-provider ollama --model llama3.3
 uv run zettel --pdf paper.pdf --llm-provider openai --model gpt-4
 ```
 
-### 自訂需求
+### 自訂需求與投影片參考
 
 ```bash
 # 使用自訂需求檔案
 uv run zettel --pdf paper.pdf --custom-file my_requirements.md
+
+# 使用投影片筆記作為參考（粗體標示優先生成卡片）
+uv run zettel --pdf paper.pdf --slides-file slides_output.md
+
+# 同時使用投影片和自訂需求
+uv run zettel --pdf paper.pdf --slides-file slides.md --custom-file style.md
 
 # 忽略預設需求檔案（config/custom_zettel.md）
 uv run zettel --pdf paper.pdf --no-custom
@@ -513,6 +519,7 @@ uv run zettel --pdf paper.pdf --no-custom
 | `--language` | 語言模式 | chinese |
 | `--domain` | 領域代碼 | Research |
 | `--custom-file` | 自訂需求檔案路徑 | - |
+| `--slides-file` | 投影片筆記檔案路徑（粗體優先生成） | - |
 | `--no-custom` | 忽略預設需求檔案 | False |
 | `--no-add-to-kb` | 不加入知識庫 | False |
 | `--cross-link` | 啟用跨論文連結 | False |

@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.generators.zettel_maker import ZettelMaker
 from src.generators.slide_maker import SlideMaker
+from src.utils.config_loader import load_env_file
 from jinja2 import Template
 
 
@@ -140,6 +141,9 @@ def generate_zettel(paper_data, llm_provider='google', model='gemini-2.0-flash-e
 
 
 def main():
+    # 載入環境變數配置
+    load_env_file()
+    
     print("\n" + "="*70)
     print("Zettelkasten 批次生成")
     print("="*70 + "\n")

@@ -21,6 +21,7 @@ from generators import SlideMaker
 from generators.zettel_maker import ZettelMaker
 from extractors import PDFExtractor
 from knowledge_base import KnowledgeBaseManager
+from utils.config_loader import load_env_file
 from jinja2 import Template
 
 
@@ -162,7 +163,34 @@ def load_custom_requirements(custom_file: str = None, default_file: str = None) 
     return None
 
 
+def load_slides_content(slides_file: str) -> str | None:
+    """
+    載入投影片筆記內容（作為卡片生成參考）
+
+    Args:
+        slides_file: 投影片筆記檔案路徑
+
+    Returns:
+        投影片內容，或 None
+    """
+    if not slides_file:
+        return None
+
+    path = Path(slides_file)
+    if path.exists():
+        content = path.read_text(encoding='utf-8')
+        print(f"📊 載入投影片筆記：{path}")
+        print(f"   （{len(content)} 字元，粗體標示將優先生成卡片）")
+        return content
+    else:
+        print(f"⚠️  警告：找不到投影片筆記檔案 {path}")
+        return None
+
+
 def main():
+    # 載入環境變數配置
+    load_env_file()
+    
     parser = argparse.ArgumentParser(
         description='Zettelkasten 卡片生成工具 - 從論文生成原子化知識卡片',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -184,6 +212,9 @@ def main():
 
   # 使用自訂需求檔案
   uv run zettel --pdf paper.pdf --custom-file my_style.md
+
+  # 使用投影片筆記作為參考（粗體標示優先生成卡片）
+  uv run zettel --pdf paper.pdf --slides-file slides_output.md
 
   # 跳過預設需求
   uv run zettel --pdf paper.pdf --no-custom
@@ -220,6 +251,8 @@ def main():
                         help='自訂需求檔案路徑（.txt 或 .md）')
     parser.add_argument('--no-custom', action='store_true',
                         help='忽略預設自訂需求檔案')
+    parser.add_argument('--slides-file', type=str,
+                        help='投影片筆記檔案路徑（作為卡片生成參考）')
 
     # 知識庫整合
     parser.add_argument('--no-add-to-kb', action='store_true',
@@ -274,6 +307,9 @@ def main():
             custom_file=args.custom_file,
             default_file='config/custom_zettel.md'
         )
+
+    # 載入投影片筆記（作為參考資料）
+    slides_content = load_slides_content(args.slides_file)
 
     print(f"\n詳細程度：{args.detail} - {AVAILABLE_DETAILS[args.detail]}")
     print(f"語言：{args.language} - {AVAILABLE_LANGUAGES[args.language]}")
@@ -389,7 +425,8 @@ def main():
             cite_key=cite_key,
             language=args.language,
             existing_related_cards=related_cards,
-            custom_requirements=custom_requirements  # 新增：自訂需求
+            custom_requirements=custom_requirements,
+            slides_content=slides_content  # 新增：投影片筆記參考
         )
 
         # 調用 LLM

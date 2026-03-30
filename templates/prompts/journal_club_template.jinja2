@@ -33,7 +33,7 @@ Please write all content in English.
 ===投影片1===
 標題：[投影片1的標題]
 內容：
-• [重點1{% if language != "english" %}(關鍵術語附英文){% endif %}，使用**粗體**標記關鍵詞]
+• [重點1{% if language != "english" %}(關鍵術語附英文){% endif %}]
 • [重點2]
 • [重點3]
 {% if detail_level in ["detailed", "comprehensive"] %}
@@ -56,7 +56,7 @@ Please write all content in English.
 1. 確保內容邏輯連貫，從淺入深
 2. 避免內容重複
 3. 每張投影片聚焦不同面向
-4. 使用**粗體**標記關鍵詞
+4. 僅對論文原文的關鍵詞（keywords）及其近義術語使用**粗體**；每張投影片最多標記 1-2 個詞，一般重點不加粗
 5. 嚴格按照格式輸出
 {% if language == "chinese" %}
 6. 全部使用繁體中文

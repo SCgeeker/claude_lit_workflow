@@ -22,6 +22,7 @@ from generators import SlideMaker
 from extractors import PDFExtractor
 from knowledge_base import KnowledgeBaseManager
 from utils.prompt_loader import load_custom_requirements
+from utils.config_loader import load_env_file, get_ollama_url
 import subprocess
 import json
 from src.utils.logger import logger
@@ -72,6 +73,9 @@ def print_available_options():
 
 
 def main():
+    # 載入環境變數配置
+    load_env_file()
+    
     parser = argparse.ArgumentParser(
         description='投影片生成工具 - 支援7種學術風格、5種詳細程度、3種語言',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -141,8 +145,8 @@ def main():
                        help='LLM提供者（預設：auto自動選擇）')
     parser.add_argument('--api-key', type=str,
                        help='API金鑰（Google/OpenAI/Anthropic用，或設置環境變數）')
-    parser.add_argument('--ollama-url', type=str, default='http://localhost:11434',
-                       help='Ollama API地址（預設：http://localhost:11434）')
+    parser.add_argument('--ollama-url', type=str, default=get_ollama_url(),
+                       help=f'Ollama API地址（預設：從環境變數或 http://localhost:11434）')
     parser.add_argument('--custom', type=str, help='自訂要求（命令行直接輸入）')
     parser.add_argument('--custom-file', type=str,
                        help='自訂需求檔案路徑（.txt 或 .md）')

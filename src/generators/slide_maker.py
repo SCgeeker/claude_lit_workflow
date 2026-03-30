@@ -13,6 +13,13 @@ from datetime import datetime
 import time
 import yaml as yaml_lib
 
+# 載入環境變數配置
+try:
+    from src.utils.config_loader import load_env_file, get_ollama_url, get_ollama_default_model
+    CONFIG_LOADER_AVAILABLE = True
+except ImportError:
+    CONFIG_LOADER_AVAILABLE = False
+
 try:
     from jinja2 import Template
     JINJA2_AVAILABLE = True
@@ -93,6 +100,13 @@ class SlideMaker:
             api_key: API金鑰（OpenAI/Google/Anthropic用）
             selection_strategy: 模型選擇策略 (balanced/quality_first/cost_first/speed_first)
         """
+        # 載入 .env 配置（如果可用）
+        if CONFIG_LOADER_AVAILABLE:
+            load_env_file()
+            # 如果使用預設 URL，則從環境變數讀取
+            if ollama_url == "http://localhost:11434":
+                ollama_url = get_ollama_url()
+        
         if not JINJA2_AVAILABLE:
             raise ImportError("Jinja2 not installed. Run: pip install jinja2")
 
@@ -750,7 +764,7 @@ class SlideMaker:
         Returns:
             投影片列表，每個投影片包含 title 和 content
         """
-        # 使用正則表達式分割投影片
+        # 主要格式：===標題===
         pattern = r'===([^=]+)==='
         parts = re.split(pattern, content)
 
@@ -767,6 +781,73 @@ class SlideMaker:
                     'content': slide_content,
                     'type': 'title' if '標題頁' in title or 'Title' in title else 'content'
                 })
+
+        if slides:
+            return slides
+
+        # Fallback 1：**投影片 N：標題** 格式（gemmapro 常用）
+        print("⚠️  未偵測到 ===格式===，嘗試 **投影片 N：標題** 格式解析...")
+        bold_slide_pattern = r'^\*\*投影片\s*\d+[：:]\s*(.+?)\*\*\s*$'
+        lines = content.split('\n')
+        current_title = None
+        current_content_lines = []
+        is_first = True
+
+        for line in lines:
+            m = re.match(bold_slide_pattern, line.strip())
+            if m:
+                if current_title is not None:
+                    slides.append({
+                        'title': current_title,
+                        'content': '\n'.join(current_content_lines).strip(),
+                        'type': 'title' if is_first else 'content'
+                    })
+                    is_first = False
+                current_title = m.group(1).strip()
+                current_content_lines = []
+            else:
+                if current_title is not None:
+                    current_content_lines.append(line)
+
+        if current_title is not None:
+            slides.append({
+                'title': current_title,
+                'content': '\n'.join(current_content_lines).strip(),
+                'type': 'content'
+            })
+
+        if slides:
+            return slides
+
+        # Fallback 2：## 標題 格式
+        print("⚠️  嘗試 ## 標題 格式解析...")
+        heading_pattern = r'^#{1,3}\s+(.+)$'
+        current_title = None
+        current_content_lines = []
+        is_first = True
+
+        for line in lines:
+            m = re.match(heading_pattern, line.strip())
+            if m:
+                if current_title is not None:
+                    slides.append({
+                        'title': current_title,
+                        'content': '\n'.join(current_content_lines).strip(),
+                        'type': 'title' if is_first else 'content'
+                    })
+                    is_first = False
+                current_title = m.group(1).strip()
+                current_content_lines = []
+            else:
+                if current_title is not None:
+                    current_content_lines.append(line)
+
+        if current_title is not None:
+            slides.append({
+                'title': current_title,
+                'content': '\n'.join(current_content_lines).strip(),
+                'type': 'content'
+            })
 
         return slides
 
@@ -1030,6 +1111,11 @@ class SlideMaker:
         slides = self.parse_slides(llm_output)
 
         if not slides:
+            # 輸出前 800 字元供診斷
+            print("\n🔍 LLM 原始輸出（前 800 字元）：")
+            print("-" * 60)
+            print(llm_output[:800])
+            print("-" * 60)
             raise ValueError("無法解析投影片內容，請檢查LLM輸出格式")
 
         # 4. 生成輸出文件
