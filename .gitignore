@@ -86,6 +86,13 @@ archive/
 # openspec 的已歸檔 change 是規格歷史，需隨 git 同步
 !openspec/changes/archive/
 
+# 知識庫資料檔（本地資料，不入版控；備份見 archive/）
+knowledge_base/index.db
+
+# 本機檔案
+.env_bak
+*.code-workspace
+
 # System files
 Thumbs.db
 .cache/
