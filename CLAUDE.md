@@ -12,15 +12,14 @@
 - **投影片生成** (`uv run slides`): PDF → Markdown 投影片（Obsidian Slides Extended 相容）
 - **原子卡片生成** (`uv run zettel`): PDF / slides → Zettelkasten 卡片
 - **設定助手** (`uv run setup`): 偵測 LLM 連線、給出設定建議
+- **MCP server** (`uv run mcp-server`): 以 MCP 曝露工具給任何 LLM 平台（stdio + HTTP）
 
 ### 暫停功能
 
-> 知識管理由筆記 App 接管，以下工具暫停開發，程式碼保留。
-
-- `analyze_paper.py` (`uv run analyze`) — 論文分析 + 知識庫收錄
-- `kb_manage.py` (`uv run kb`) — 知識庫管理
-- `generate_embeddings.py` (`uv run embeddings`) — 向量嵌入
-- `src/analyzers/` — 概念網絡分析（Phase 2.4）
+> 知識管理由筆記 App 接管，以下工具暫停開發。
+> 根目錄入口腳本已歸檔（`archive/root_cli_scripts_20260708.zip`，git 歷史可查）；
+> 核心模組保留於 `src/claude_lit/`（analyzers、knowledge_base、embeddings 等）。
+> `slides --analyze-first` 依賴 analyze_paper.py，隨歸檔一併停用。
 
 ---
 
@@ -37,11 +36,6 @@ claude_lit_workflow/
 │   ├── resource_loader.py # 資源解析（cwd 覆蓋 > 套件內建）
 │   ├── resources/         # 套件內建模板與預設設定
 │   └── ...                # utils / knowledge_base / integrations（詳見 src/CLAUDE.md）
-│
-├── generate_zettel_batch.py # 批次 Zettel 生成（腳本）
-├── analyze_paper.py       # [暫停] 論文分析（uv run python analyze_paper.py）
-├── kb_manage.py           # [暫停] 知識庫管理
-├── generate_embeddings.py # [暫停] 向量嵌入
 │
 ├── openspec/              # SDD 規格（specs = 行為真相來源）
 ├── pyproject.toml         # uv 專案配置（entry points 指向 claude_lit.*）
