@@ -85,6 +85,36 @@ DEFAULT_LLM_PROVIDER=google   # 或 auto（自動偵測）
 
 `--style`、`--detail`、`--llm-provider` 等詳細參數：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 
+## MCP Server
+
+以 Model Context Protocol 曝露工具，任何支援 MCP 的 LLM 平台（Claude Desktop / Claude Code / Cursor 等）皆可呼叫。
+
+### 啟動
+
+```bash
+uv run mcp-server                                  # stdio（本機 client）
+uv run mcp-server --transport http --port 8765     # Streamable HTTP（遠端平台）
+```
+
+### 註冊到 Claude Code
+
+```bash
+claude mcp add lit-workflow -- uv --directory D:/core/research/claude_lit_workflow run mcp-server
+```
+
+### 提供的能力
+
+| 類別 | 名稱 | 說明 |
+|------|------|------|
+| Tool | `generate_slides` | PDF/URL/主題 → 投影片（伺服器端 LLM 生成） |
+| Tool | `generate_zettel` | PDF/URL → Zettel 卡片（預設不寫入本機知識庫） |
+| Tool | `check_setup` / `list_options` | 供應商狀態 / 風格目錄 |
+| Tool | `read_output` | 讀取 output/ 下的生成結果（限定邊界） |
+| Resource | `template://` `styles://` `config://` | prompt 模板、風格定義、自訂需求、脫敏設定 |
+| Prompt | `slides-prompt` / `zettel-prompt` | 渲染完成的完整提示詞，供呼叫端 LLM 自行生成 |
+
+生成類工具可能需時數分鐘（LLM 呼叫 timeout 300 秒），伺服器會發 progress notification；建議 client 的 tool timeout 設 360 秒以上。API key 只存在伺服器行程的 `.env`，不經協定傳輸。
+
 ## 自訂需求
 
 編輯以下檔案，定義你的研究領域術語與生成風格：
