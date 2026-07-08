@@ -29,7 +29,7 @@ PDF 論文
 ### 1. 安裝
 
 ```bash
-git clone https://github.com/SCChen1005/claude_lit_workflow.git
+git clone https://github.com/SCgeeker/claude_lit_workflow.git
 cd claude_lit_workflow
 uv sync
 ```
