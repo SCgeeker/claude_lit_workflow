@@ -61,7 +61,7 @@ uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
 | 提供者 | 環境變數 | 推薦模型 |
 |--------|----------|---------|
-| Google Gemini | `GOOGLE_API_KEY` | gemini-2.0-flash |
+| Google Gemini | `GOOGLE_API_KEY` | gemini-2.5-flash |
 | Anthropic Claude | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
 | OpenAI | `OPENAI_API_KEY` | gpt-4o-mini |
 | Ollama（本地） | `OLLAMA_URL` | llama3.2 |

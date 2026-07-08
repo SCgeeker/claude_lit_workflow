@@ -362,7 +362,7 @@ class SlideMaker:
         """獲取默認模型"""
         available = self._detect_available_providers()
         if "google" in available:
-            return "google", "gemini-2.0-flash"
+            return "google", os.getenv("GOOGLE_MODEL") or "gemini-2.5-flash"
         elif "anthropic" in available:
             return "anthropic", "claude-3-haiku-20240307"
         elif "ollama" in available:
@@ -457,7 +457,7 @@ class SlideMaker:
                     used_model = actual_model or "gpt-oss:20b-cloud"
                     result = self.call_ollama(prompt, used_model, timeout)
                 elif attempt_provider == 'google':
-                    used_model = actual_model or "gemini-2.0-flash"
+                    used_model = actual_model or os.getenv("GOOGLE_MODEL") or "gemini-2.5-flash"
                     result = self.call_google(prompt, used_model, max_output_tokens=max_tokens)
                 elif attempt_provider == 'openai':
                     used_model = actual_model or "gpt-3.5-turbo"
@@ -631,7 +631,7 @@ class SlideMaker:
 
     def call_google(self,
                    prompt: str,
-                   model: str = "gemini-2.0-flash",
+                   model: str = "gemini-2.5-flash",
                    max_output_tokens: int = 8192,
                    temperature: float = 0.4) -> str:
         """

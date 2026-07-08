@@ -16,7 +16,7 @@ llm:
   google:
     base_url: "https://generativelanguage.googleapis.com/v1beta/models"
     api_key: ""  # 從環境變數讀取 GOOGLE_API_KEY
-    default_model: "gemini-2.0-flash"
+    default_model: "gemini-2.5-flash"
 
   openai:
     base_url: "https://api.openai.com/v1"

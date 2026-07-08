@@ -13,17 +13,22 @@ from .models import OptionCatalog, ProviderReport, ProviderStatus
 from .prompts import _load_styles_config
 
 
+# 偵測用的預設 Gemini 模型；可經 GOOGLE_MODEL 環境變數覆寫，避免模型下架時需改碼
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+
+
 def _check_google() -> Tuple[bool, str]:
     key = os.getenv("GOOGLE_API_KEY", "")
     if not key or "your-" in key:
         return False, "未設定 GOOGLE_API_KEY"
+    model_name = os.getenv("GOOGLE_MODEL") or DEFAULT_GEMINI_MODEL
     try:
         import google.generativeai as genai
 
         genai.configure(api_key=key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel(model_name)
         model.generate_content("Hi", generation_config={"max_output_tokens": 5})
-        return True, "gemini-2.0-flash 可用"
+        return True, f"{model_name} 可用"
     except ImportError:
         return False, "缺少套件 google-generativeai"
     except Exception as e:

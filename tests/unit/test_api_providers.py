@@ -7,6 +7,24 @@ import claude_lit.api.providers as providers_mod
 from claude_lit.api.providers import check_providers, list_options
 
 
+def _install_fake_genai(monkeypatch, captured):
+    """patch google.generativeai 的 configure / GenerativeModel，記錄被使用的模型名"""
+
+    class FakeModel:
+        def __init__(self, model_name):
+            captured["model"] = model_name
+
+        def generate_content(self, *args, **kwargs):
+            return object()
+
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        pytest.skip("google-generativeai 未安裝")
+    monkeypatch.setattr(genai, "configure", lambda **kw: None)
+    monkeypatch.setattr(genai, "GenerativeModel", FakeModel)
+
+
 @pytest.fixture
 def all_unavailable(monkeypatch):
     """把所有供應商 check 函式 mock 為不可用"""
@@ -58,6 +76,30 @@ class TestCheckProviders:
         ok, msg = providers_mod._check_google()
         assert ok is False
         assert "未設定" in msg
+
+    def test_check_google_uses_supported_model(self, monkeypatch):
+        """偵測用的預設模型須為目前可用的 gemini-2.5-flash（回歸：gemini-2.0-flash 已 404）"""
+        monkeypatch.setenv("GOOGLE_API_KEY", "AIzaSyRealLookingKey")
+        monkeypatch.delenv("GOOGLE_MODEL", raising=False)
+        captured = {}
+        _install_fake_genai(monkeypatch, captured)
+
+        ok, msg = providers_mod._check_google()
+        assert ok is True
+        assert captured["model"] == "gemini-2.5-flash"
+        assert "gemini-2.0-flash" not in msg
+
+    def test_check_google_respects_env_override(self, monkeypatch):
+        """GOOGLE_MODEL 環境變數可覆寫偵測模型，避免模型下架時需改碼"""
+        monkeypatch.setenv("GOOGLE_API_KEY", "AIzaSyRealLookingKey")
+        monkeypatch.setenv("GOOGLE_MODEL", "gemini-2.5-pro")
+        captured = {}
+        _install_fake_genai(monkeypatch, captured)
+
+        ok, msg = providers_mod._check_google()
+        assert ok is True
+        assert captured["model"] == "gemini-2.5-pro"
+        assert "gemini-2.5-pro" in msg
 
 
 class TestListOptions:

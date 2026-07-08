@@ -94,7 +94,7 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP
 
 | Provider | 模型 | 用途 |
 |----------|------|------|
-| **Google Gemini** | gemini-2.0-flash-exp | 預設推薦 |
+| **Google Gemini** | gemini-2.5-flash | 預設推薦 |
 | **Anthropic** | claude-haiku-4-5 | 快速低成本 |
 | **OpenAI** | gpt-4o-mini | 通用 |
 | **Ollama** | llama3.2 | 本地運行 |
