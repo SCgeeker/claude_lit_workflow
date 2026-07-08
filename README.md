@@ -61,7 +61,7 @@ uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
 | 提供者 | 環境變數 | 推薦模型 |
 |--------|----------|---------|
-| Google Gemini | `GOOGLE_API_KEY` | gemini-2.0-flash-exp |
+| Google Gemini | `GOOGLE_API_KEY` | gemini-2.0-flash |
 | Anthropic Claude | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
 | OpenAI | `OPENAI_API_KEY` | gpt-4o-mini |
 | Ollama（本地） | `OLLAMA_URL` | llama3.2 |
@@ -115,14 +115,55 @@ claude mcp add lit-workflow -- uv --directory D:/core/research/claude_lit_workfl
 
 生成類工具可能需時數分鐘（LLM 呼叫 timeout 300 秒），伺服器會發 progress notification；建議 client 的 tool timeout 設 360 秒以上。API key 只存在伺服器行程的 `.env`，不經協定傳輸。
 
-## 自訂需求
+## 模板與設定（cwd 覆蓋機制）
 
-編輯以下檔案，定義你的研究領域術語與生成風格：
+套件內建一份預設模板與設定（`src/claude_lit/resources/`，隨 wheel 發佈）。執行時依三層順序解析，找到即用：
+
+```
+1. 明確傳入的路徑（如 --custom-file my_style.md）
+2. 目前工作目錄（cwd）的 templates/、config/
+3. 套件內建 claude_lit/resources/
+```
+
+### 情境範例
+
+**在 repo 目錄下使用（日常情境）**——cwd 版本優先，改完即生效、不需重裝：
+
+```bash
+cd claude_lit_workflow
+# 編輯 config/custom_slides.md 加入你的領域術語
+# 編輯 templates/prompts/journal_club_template.jinja2 調整 prompt
+uv run slides --pdf paper.pdf     # 使用 repo 內的模板與自訂需求
+```
+
+**wheel 安裝到其他機器**——工作目錄沒有覆蓋檔時自動用套件內建版，開箱即用：
+
+```bash
+uv build
+uv pip install dist/claude_lit_workflow-*.whl
+cd D:\any\folder                  # 任意目錄，無 templates/、config/
+slides --pdf paper.pdf            # 自動使用套件內建模板與預設值
+```
+
+**客製安裝環境**——在工作目錄建立同名路徑即可覆蓋，不用碰套件：
+
+```bash
+mkdir config
+# 建立 config/custom_slides.md 填入你的術語對照表
+slides --pdf paper.pdf            # cwd 的 custom_slides.md 優先生效
+```
+
+### 自訂需求檔
 
 - `config/custom_slides.md` — 投影片風格、術語對照表
 - `config/custom_zettel.md` — 卡片撰寫規則、術語對照表
+- 系統自動載入；`--no-custom` 跳過；`--custom-file path.md` 指定其他檔案（最高優先）
+- `config/custom_figure_*.md`、`custom_table_*.md` 為進階範本，僅供 `--custom-file` 使用，不隨套件發佈
+- MCP 呼叫端可透過 `config://custom-slides` 等 resources 唯讀檢視這些檔案
 
-系統自動載入；使用 `--no-custom` 可跳過。
+### 維護規則（開發者）
+
+templates/、config/ 中有套件內建版的 10 個檔案（模板 6 個＋custom_slides、custom_zettel、settings.yaml、model_selection.yaml），修改後發佈前需同步一份到 `src/claude_lit/resources/`——`tests/unit/test_resources.py` 斷言兩份內容一致，漂移時測試失敗提醒。
 
 ## 輸出格式
 
@@ -151,11 +192,20 @@ MIT License
 
 ---
 
-**版本**: 0.11.0 | **更新**: 2026-03-30
+**版本**: 0.12.0 | **更新**: 2026-07-08
 
 ---
 
 ## 迭代紀錄
+
+### 2026-07-08 MCP server + 正規 package 化（openspec SDD）
+
+依 SDD 流程完成三個 change（規格見 `openspec/specs/`）：
+
+- **extract-core-api**：CLI 編排邏輯抽為 `claude_lit/api/` 核心層（pydantic 介面、型別化錯誤、進度 callback、stdout 淨空）
+- **add-mcp-server**：`uv run mcp-server`，5 tools + 6 resources + 2 prompts，stdio + Streamable HTTP，任何支援 MCP 的 LLM 平台可串接
+- **package-cli**：`src/claude_lit/` 正規 package，wheel 安裝即用；templates/、config/ 轉為 cwd 覆蓋層，預設隨套件發佈
+- 暫停工具入口移除，根目錄腳本歸檔（`archive/`，git 歷史可查）；`knowledge_base/index.db` 退出版控
 
 ### 2026-03-30 架構定位調整 + setup 工具
 
