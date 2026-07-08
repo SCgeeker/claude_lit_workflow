@@ -13,14 +13,13 @@ import shutil
 # UTF-8 編碼
 if sys.platform == 'win32':
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
 
-sys.path.insert(0, str(Path(__file__).parent))
 
-from src.generators.zettel_maker import ZettelMaker
-from src.generators.slide_maker import SlideMaker
-from src.utils.config_loader import load_env_file
+from claude_lit.generators.zettel_maker import ZettelMaker
+from claude_lit.generators.slide_maker import SlideMaker
+from claude_lit.utils.config_loader import load_env_file
 from jinja2 import Template
 
 
@@ -51,7 +50,7 @@ def extract_paper_content(md_path):
     }
 
 
-def generate_zettel(paper_data, llm_provider='google', model='gemini-2.0-flash-exp'):
+def generate_zettel(paper_data, llm_provider='google', model='gemini-2.0-flash'):
     """使用 LLM 生成 Zettelkasten 卡片"""
     print(f"\n{'='*70}")
     print(f"生成 Zettelkasten: {paper_data['cite_key']}")
@@ -168,7 +167,7 @@ def main():
         output_dir = generate_zettel(
             paper_data,
             llm_provider='google',
-            model='gemini-2.0-flash-exp'
+            model='gemini-2.0-flash'
         )
 
         if output_dir:

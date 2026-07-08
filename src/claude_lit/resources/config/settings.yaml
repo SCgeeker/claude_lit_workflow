@@ -1,0 +1,228 @@
+# 知識生產器系統配置
+# Knowledge Production System Configuration
+
+# === LLM後端配置 ===
+llm:
+  default_backend: "auto"  # auto, ollama, google, openai, anthropic
+  auto_select: true  # 啟用自動模型選擇
+
+  ollama:
+    base_url: "http://localhost:11434"
+    api_endpoint: "/api/generate"
+    default_model: "gemma2:latest"
+    timeout: 120
+    retry_attempts: 3
+
+  google:
+    base_url: "https://generativelanguage.googleapis.com/v1beta/models"
+    api_key: ""  # 從環境變數讀取 GOOGLE_API_KEY
+    default_model: "gemini-2.0-flash"
+
+  openai:
+    base_url: "https://api.openai.com/v1"
+    api_key: ""  # 從環境變數讀取 OPENAI_API_KEY
+    default_model: "gpt-3.5-turbo"
+
+  anthropic:
+    base_url: "https://api.anthropic.com/v1"
+    api_key: ""  # 從環境變數讀取 ANTHROPIC_API_KEY
+    default_model: "claude-3-haiku-20240307"
+
+  llama_cpp:
+    base_url: "http://localhost:8080"
+    api_endpoint: "/v1/chat/completions"
+    timeout: 120
+
+# === 自動模型選擇配置 ===
+model_selection:
+  enabled: true
+  config_file: "config/model_selection.yaml"  # 詳細的模型選擇配置
+  default_strategy: "balanced"  # balanced, quality_first, cost_first, speed_first
+
+  # 成本控制
+  cost_limits:
+    per_session: 1.00  # 單次會話最高$1
+    per_day: 5.00      # 每日最高$5
+    per_month: 50.00   # 每月最高$50
+
+  # 監控設置
+  monitoring:
+    enabled: true
+    track_usage: true
+    track_costs: true
+    track_performance: true
+    log_directory: "logs/model_usage"
+
+  # 自動切換規則
+  auto_switch:
+    on_quota_exceeded: true    # 配額耗盡時自動切換
+    on_cost_warning: true      # 成本接近限制時切換
+    on_timeout: true           # 超時時自動切換
+    on_error_rate: true        # 錯誤率過高時切換
+    error_threshold: 0.5       # 錯誤率閾值（50%）
+
+  # 優先順序（當auto模式時的檢查順序）
+  provider_priority:
+    - "google"     # 優先使用免費的 Gemini
+    - "anthropic"  # 次選 Claude Haiku（低成本）
+    - "ollama"     # 本地模型（免費但可能較慢）
+    - "openai"     # 最後選擇 OpenAI（成本較高）
+
+# === PDF處理配置 ===
+pdf:
+  max_characters: 50000  # Journal Club原始限制的5倍
+  extraction_method: "pdfplumber"  # pdfplumber 或 PyPDF2
+  fallback_to_ocr: false
+  extract_images: true
+  extract_tables: true
+
+# === 簡報生成配置 ===
+slides:
+  default_style: "modern_academic"
+  default_detail: "standard"
+  default_language: "chinese"
+  default_slide_count: 15
+  min_slides: 5
+  max_slides: 30
+
+  template_path: "templates/prompts/journal_club_template.jinja2"
+  styles_config: "templates/styles/academic_styles.yaml"
+
+  output:
+    default_format: "markdown"
+    save_directory: "output/slides"
+    filename_pattern: "{topic}_JournalClub_{timestamp}.md"
+
+# === 筆記生成配置 ===
+notes:
+  default_format: "markdown"
+  structure:
+    - "摘要 (Abstract)"
+    - "研究背景 (Background)"
+    - "研究方法 (Methods)"
+    - "主要結果 (Results)"
+    - "討論與結論 (Discussion & Conclusion)"
+    - "個人評論 (Personal Comments)"
+    - "相關文獻 (Related Literature)"
+    - "關鍵詞 (Keywords)"
+
+  output:
+    save_directory: "knowledge_base/papers"
+    filename_pattern: "{authors}_{year}_{title}.md"
+    metadata_format: "yaml_frontmatter"
+
+# === 知識庫配置 ===
+knowledge_base:
+  root_directory: "knowledge_base"
+  database_path: "knowledge_base/index.db"
+
+  # 書目檔案路徑（BibTeX/RIS）
+  bibliography:
+    default_bib: "D:\\core\\Research\\Program_verse\\+\\My Library.bib"
+    # default_ris: ""  # RIS 檔案路徑（可選）
+
+  indexing:
+    auto_index: true
+    full_text_search: true
+    vector_search: true  # ✅ 已實作 (Phase 1.5)
+
+  metadata:
+    track_citations: true
+    track_topics: true
+    track_authors: true
+    auto_tagging: true
+
+  backup:
+    enabled: true
+    frequency: "daily"
+    keep_versions: 7
+
+# === 向量搜索配置 (Vector Search / Embeddings) ===
+embeddings:
+  # 默認提供者
+  default_provider: "gemini"  # gemini | ollama
+
+  # Gemini 配置
+  gemini:
+    model: "models/text-embedding-004"
+    dimension: 768
+    cost_per_1k_tokens: 0.00015
+    batch_size: 100
+    api_key_env: "GOOGLE_API_KEY"
+
+  # Ollama 配置
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "qwen3-embedding:4b"
+    dimension: 2560
+    timeout: 120
+
+  # ChromaDB 配置
+  vector_db:
+    persist_directory: "chroma_db"
+    collections:
+      papers: "papers"
+      zettelkasten: "zettelkasten"
+
+  # 搜索默認值
+  search:
+    default_limit: 10
+    similarity_threshold: 0.3
+
+# === 工作目錄掛載 ===
+working_directories:
+  - path: "D:\\Apps\\LLM\\SciMaker"
+    name: "SciMaker"
+    access: "read"
+    resources:
+      - "persona_files: *.memory.md"
+      - "modelfiles: Modelfile*.txt"
+      - "templates: journal_club_analysis/*"
+
+# === 批次處理配置 ===
+batch:
+  max_parallel: 3
+  timeout_per_file: 300
+  continue_on_error: true
+  generate_summary: true
+
+# === 輸出格式配置 ===
+output:
+  formats:
+    - "pptx"      # PowerPoint簡報
+    - "markdown"  # Markdown筆記
+    - "json"      # 結構化數據
+    - "html"      # HTML報告
+
+  default_formats:
+    - "pptx"
+    - "markdown"
+
+# === 日誌配置 ===
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/system.log"
+  console: true
+  format: "[{time}] {level}: {message}"
+
+# === 快取配置 ===
+cache:
+  enabled: true
+  directory: ".cache"
+  pdf_extraction: true
+  llm_responses: false  # 不快取LLM回應以確保新鮮度
+  ttl: 86400  # 24小時（秒）
+
+# === 效能配置 ===
+performance:
+  chunk_size: 10000  # 處理長文字時的分塊大小
+  max_retries: 3
+  timeout: 300
+  memory_limit: "2GB"
+
+# === UI配置 ===
+ui:
+  theme: "default"
+  language: "zh-TW"
+  show_progress: true
+  verbose: false

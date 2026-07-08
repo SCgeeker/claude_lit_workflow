@@ -3,7 +3,7 @@
 批次處理器 Python API 使用範例
 """
 
-from src.processors import BatchProcessor
+from claude_lit.processors import BatchProcessor
 
 # 創建批次處理器實例
 processor = BatchProcessor(max_workers=3, error_handling='skip')

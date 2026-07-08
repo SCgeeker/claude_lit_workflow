@@ -5,7 +5,7 @@ TODO: 實施完整的測試覆蓋 (Phase 2.1+)
 """
 
 import pytest
-from src.knowledge_base import KnowledgeBaseManager
+from claude_lit.knowledge_base import KnowledgeBaseManager
 
 
 class TestKnowledgeBaseManager:

@@ -3,7 +3,7 @@
 向量嵌入器使用範例
 """
 
-from src.embeddings.providers import GeminiEmbedder, OllamaEmbedder
+from claude_lit.embeddings.providers import GeminiEmbedder, OllamaEmbedder
 
 # === Google Gemini Embedder ===
 print("=== Gemini Embedder ===")

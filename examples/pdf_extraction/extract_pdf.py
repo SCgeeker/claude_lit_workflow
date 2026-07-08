@@ -3,7 +3,7 @@
 PDF提取器使用範例
 """
 
-from src.extractors import PDFExtractor
+from claude_lit.extractors import PDFExtractor
 
 # 創建提取器實例
 extractor = PDFExtractor(max_chars=50000)

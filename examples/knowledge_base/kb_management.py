@@ -3,7 +3,7 @@
 知識庫管理範例
 """
 
-from src.knowledge_base import KnowledgeBaseManager
+from claude_lit.knowledge_base import KnowledgeBaseManager
 
 kb = KnowledgeBaseManager()
 

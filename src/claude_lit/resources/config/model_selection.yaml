@@ -1,0 +1,353 @@
+# 模型選擇配置文件
+# Model Selection Configuration
+# 最後更新: 2025-10-31
+
+# === 模型定義 ===
+models:
+  # Google Gemini 2.5 Flash - 預設 (速度快/成本低)
+  gemini_flash:
+    provider: "google"
+    model_name: "gemini-2.5-flash"
+    priority: 1
+    free_quota: false
+    cost_per_1k_tokens:
+      input: 0.0001   # $0.10 / 1M
+      output: 0.0004  # $0.40 / 1M
+    quality_score: 4.5
+    speed: "fast"
+    best_for:
+      - "batch_processing"
+      - "initial_analysis"
+      - "zettelkasten"
+      - "slides_standard"
+    supports_chinese: true
+    max_context: 1000000
+    features:
+      - "low_cost"
+      - "high_throughput"
+
+  # Google Gemini 2.5 Pro - 高品質 (複雜推理)
+  gemini_pro:
+    provider: "google"
+    model_name: "gemini-2.5-pro"
+    priority: 2
+    free_quota: false
+    cost_per_1k_tokens:
+      input: 0.00125  # $1.25 / 1M
+      output: 0.01    # $10.00 / 1M
+    quality_score: 5
+    speed: "medium"
+    best_for:
+      - "deep_analysis"
+      - "research_methods"
+      - "literature_review"
+      - "complex_reasoning"
+    supports_chinese: true
+    max_context: 2000000
+    features:
+      - "reasoning"
+      - "long_context"
+
+  # Experimantal (Legacy)
+  gemini_exp:
+    provider: "google"
+    model_name: "gemini-2.0-flash"
+    priority: 9
+    free_quota: true
+    daily_limit: 100  # 估計的每日免費調用次數
+    quality_score: 5
+    speed: "fast"
+    best_for:
+      - "zettelkasten"
+      - "detailed_analysis"
+      - "research_methods"
+      - "literature_review"
+    supports_chinese: true
+    max_context: 32000
+    features:
+      - "multi_turn"
+      - "citations"
+      - "complex_formatting"
+
+  # Claude 3 Haiku - 次優先（成本最低）
+  claude_haiku:
+    provider: "anthropic"
+    model_name: "claude-3-haiku-20240307"
+    priority: 2
+    free_quota: false
+    cost_per_1k_tokens:
+      input: 0.00025
+      output: 0.00125
+    estimated_cost_per_use: 0.02
+    quality_score: 4
+    speed: "very_fast"
+    best_for:
+      - "batch_processing"
+      - "summaries"
+      - "simple_slides"
+      - "teaching"
+    supports_chinese: true
+    max_context: 200000
+    features:
+      - "fast_processing"
+      - "stable_api"
+
+  # GPT-OSS:20b - 備用（速度快但品質一般）
+  gpt_oss:
+    provider: "ollama"
+    model_name: "gpt-oss:20b-cloud"
+    priority: 3
+    free_quota: true
+    quality_score: 3
+    speed: "fast"
+    best_for:
+      - "quick_drafts"
+      - "simple_tasks"
+    supports_chinese: true
+    max_context: 8000
+    features:
+      - "cloud_model"
+
+  # MiniMax-M2 - 限制使用（不穩定）
+  minimax_m2:
+    provider: "ollama"
+    model_name: "minimax-m2:cloud"
+    priority: 4
+    free_quota: true
+    quality_score: 5
+    speed: "slow"
+    best_for:
+      - "deep_thinking"
+      - "complex_analysis"
+    supports_chinese: true
+    max_context: 204800
+    features:
+      - "thinking_mode"
+      - "230B_params"
+    limitations:
+      - "cli_only"
+      - "unstable_with_json"
+      - "timeout_issues"
+    disabled_for:
+      - "zettelkasten"  # JSON格式問題
+      - "batch_processing"  # 太慢
+
+# === 任務類型與模型映射 ===
+task_model_mapping:
+  # Zettelkasten原子筆記
+  zettelkasten:
+    preferred: ["gemini_flash", "gemini_pro"]
+    fallback: ["claude_haiku", "gpt_oss"]
+    avoid: ["minimax_m2"]  # JSON格式問題
+
+  # 學術簡報生成
+  academic_slides:
+    preferred: ["gemini_pro", "gemini_flash"]
+    fallback: ["claude_haiku", "gpt_oss"]
+
+  # 批次處理
+  batch_processing:
+    preferred: ["gemini_flash", "claude_haiku"]
+    fallback: ["gpt_oss"]
+    avoid: ["minimax_m2"]  # 太慢
+
+  # 文獻回顧
+  literature_review:
+    preferred: ["gemini_pro", "gemini_flash"]
+    fallback: ["gpt_oss"]
+
+  # 教學材料
+  teaching_materials:
+    preferred: ["claude_haiku", "gemini"]
+    fallback: ["gpt_oss"]
+
+  # 快速草稿
+  quick_draft:
+    preferred: ["gpt_oss", "claude_haiku"]
+    fallback: ["gemini"]
+
+# === 學術風格與模型映射 ===
+style_model_mapping:
+  # 需要深度分析的風格
+  research_methods:
+    preferred: ["gemini"]
+    fallback: ["claude_haiku"]
+
+  literature_review:
+    preferred: ["gemini"]
+    fallback: ["claude_haiku"]
+
+  zettelkasten:
+    preferred: ["gemini"]
+    fallback: ["claude_haiku"]
+    avoid: ["minimax_m2"]
+
+  # 一般風格
+  modern_academic:
+    preferred: ["gemini", "claude_haiku"]
+    fallback: ["gpt_oss"]
+
+  teaching:
+    preferred: ["claude_haiku", "gemini"]
+    fallback: ["gpt_oss"]
+
+  # 簡單風格
+  classic_academic:
+    preferred: ["claude_haiku", "gpt_oss"]
+    fallback: ["gemini"]
+
+# === 選擇策略 ===
+selection_strategies:
+  # 平衡模式（默認）
+  balanced:
+    description: "平衡品質、成本和速度"
+    rules:
+      - "prefer_free_quota"
+      - "quality_threshold: 3"
+      - "max_cost_per_use: 0.05"
+
+  # 品質優先
+  quality_first:
+    description: "優先選擇高品質模型"
+    rules:
+      - "quality_threshold: 4"
+      - "ignore_cost"
+      - "prefer_features: [thinking_mode, citations]"
+
+  # 成本優先
+  cost_first:
+    description: "最小化成本"
+    rules:
+      - "prefer_free_quota"
+      - "max_cost_per_use: 0.01"
+      - "quality_threshold: 2"
+
+  # 速度優先
+  speed_first:
+    description: "最快完成"
+    rules:
+      - "prefer_speed: [very_fast, fast]"
+      - "quality_threshold: 2"
+      - "avoid_models: [minimax_m2]"
+
+# === 使用量追蹤 ===
+usage_tracking:
+  enabled: true
+  log_directory: "logs/model_usage"
+  track_metrics:
+    - "model_used"
+    - "tokens_consumed"
+    - "cost_incurred"
+    - "success_rate"
+    - "response_time"
+    - "task_type"
+    - "user_satisfaction"
+
+  quota_tracking:
+    gemini:
+      reset_period: "daily"
+      reset_time: "00:00"
+      warning_threshold: 80  # 使用量達80%時警告
+
+    claude:
+      track_monthly_cost: true
+      cost_warning_threshold: 10.00  # $10警告
+
+  reporting:
+    generate_daily: true
+    generate_weekly: true
+    report_format: "markdown"
+
+# === 失敗重試策略 ===
+retry_strategy:
+  max_attempts: 3
+  backoff_multiplier: 2
+  initial_delay: 1
+
+  fallback_chain:
+    default: ["gemini", "claude_haiku", "gpt_oss"]
+    zettelkasten: ["gemini", "claude_haiku"]
+    batch: ["claude_haiku", "gemini", "gpt_oss"]
+
+  error_handling:
+    timeout:
+      action: "switch_model"
+      avoid_models: ["minimax_m2"]
+
+    rate_limit:
+      action: "wait_and_retry"
+      wait_time: 60
+
+    api_error:
+      action: "switch_provider"
+
+    quota_exceeded:
+      action: "switch_to_paid"
+      preferred_paid: "claude_haiku"
+
+# === 成本控制 ===
+cost_control:
+  enabled: true
+
+  limits:
+    per_session: 1.00  # 單次會話最高$1
+    per_day: 5.00      # 每日最高$5
+    per_month: 50.00   # 每月最高$50
+
+  warnings:
+    - threshold: 0.50  # 達到限額50%時警告
+      message: "成本接近會話限額"
+    - threshold: 0.80
+      message: "成本即將超出限額，考慮切換免費模型"
+
+  auto_switch:
+    enabled: true
+    switch_to_free_at: 0.90  # 達到90%限額時自動切換
+
+# === 效能監控 ===
+performance_monitoring:
+  enabled: true
+
+  metrics:
+    - name: "response_time"
+      warning_threshold: 30  # 秒
+      critical_threshold: 60
+
+    - name: "success_rate"
+      warning_threshold: 0.80  # 80%成功率
+      critical_threshold: 0.50
+
+    - name: "quality_score"
+      track_user_feedback: true
+      adjust_priorities: true  # 根據反饋調整優先級
+
+  auto_optimization:
+    enabled: true
+    rebalance_period: "weekly"
+    learning_rate: 0.1
+
+# === 特殊規則 ===
+special_rules:
+  # 時間限制
+  time_based:
+    peak_hours: "09:00-17:00"  # 尖峰時段
+    peak_strategy: "cost_first"
+    off_peak_strategy: "quality_first"
+
+  # 檔案大小限制
+  file_size_based:
+    large_files:  # >30000字元
+      prefer_models: ["gemini", "claude_haiku"]
+      avoid_models: ["minimax_m2"]
+
+    small_files:  # <5000字元
+      prefer_models: ["gpt_oss", "claude_haiku"]
+
+  # 語言偏好
+  language_based:
+    chinese:
+      prefer_models: ["gemini", "claude_haiku"]
+    english:
+      prefer_models: ["claude_haiku", "gpt_oss"]
+    bilingual:
+      prefer_models: ["gemini", "claude_haiku"]

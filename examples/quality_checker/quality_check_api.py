@@ -3,7 +3,7 @@
 質量檢查器 Python API 使用範例
 """
 
-from src.checkers import QualityChecker
+from claude_lit.checkers import QualityChecker
 
 checker = QualityChecker()
 

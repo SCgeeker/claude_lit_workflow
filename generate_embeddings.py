@@ -17,13 +17,12 @@ from tqdm import tqdm
 
 # UTF-8 編碼（Windows 支援）
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
 # 導入 embedding providers 和 vector database
-from src.embeddings.providers import GeminiEmbedder, OllamaEmbedder
-from src.embeddings.vector_db import VectorDatabase
-from src.knowledge_base.kb_manager import KnowledgeBaseManager
-from src.utils.content_filter import extract_ai_content
+from claude_lit.embeddings.providers import GeminiEmbedder, OllamaEmbedder
+from claude_lit.embeddings.vector_db import VectorDatabase
+from claude_lit.knowledge_base.kb_manager import KnowledgeBaseManager
+from claude_lit.utils.content_filter import extract_ai_content
 
 
 class EmbeddingGenerator:

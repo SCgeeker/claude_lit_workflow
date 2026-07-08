@@ -16,7 +16,7 @@ if sys.platform == 'win32':
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.knowledge_base import KnowledgeBaseManager
+from claude_lit.knowledge_base import KnowledgeBaseManager
 
 
 def demo_all_features():

@@ -15,11 +15,10 @@ from pathlib import Path
 #     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 #     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-sys.path.insert(0, str(Path(__file__).parent))
 
-from src.knowledge_base import KnowledgeBaseManager
-from src.embeddings.providers import GeminiEmbedder, OllamaEmbedder
-from src.embeddings.vector_db import VectorDatabase
+from claude_lit.knowledge_base import KnowledgeBaseManager
+from claude_lit.embeddings.providers import GeminiEmbedder, OllamaEmbedder
+from claude_lit.embeddings.vector_db import VectorDatabase
 
 # 導入元數據修復工具
 try:
@@ -29,11 +28,11 @@ except ImportError:
 
 # 導入關係發現器 (Phase 2.1)
 try:
-    from src.analyzers import RelationFinder
+    from claude_lit.analyzers import RelationFinder
 except ImportError:
     RelationFinder = None
 
-from src.utils.logger import logger
+from claude_lit.utils.logger import logger
 
 import sqlite3
 import json
@@ -409,7 +408,7 @@ def cmd_update(args):
         else:
             print(f"\n🌐 從 CrossRef 查詢 DOI: {target_doi}...")
             try:
-                from src.integrations.doi_resolver import DOIResolver
+                from claude_lit.integrations.doi_resolver import DOIResolver
                 resolver = DOIResolver()
                 doi_metadata = resolver.resolve(target_doi)
 
@@ -794,7 +793,7 @@ def cmd_hybrid_search(args):
 
 def cmd_auto_link(args):
     """為論文自動建立與Zettelkasten的連結（基於向量相似度）"""
-    from src.knowledge_base.auto_link import auto_link_v2
+    from claude_lit.knowledge_base.auto_link import auto_link_v2
 
     print("\n" + "=" * 60)
     print(f"🔗 自動連結論文 {args.paper_id}")
@@ -836,7 +835,7 @@ def cmd_auto_link(args):
 
 def cmd_auto_link_all(args):
     """為所有論文批次建立連結"""
-    from src.knowledge_base.auto_link import auto_link_all_papers
+    from claude_lit.knowledge_base.auto_link import auto_link_all_papers
 
     print("\n" + "=" * 60)
     print("🔗 批次自動連結所有論文")
@@ -1396,7 +1395,7 @@ def cmd_analyze_relations(args):
 def cmd_visualize_network(args):
     """執行概念網絡完整分析並生成 Obsidian 友好格式 (Phase 2.2)"""
     try:
-        from src.analyzers.concept_mapper import ConceptMapper
+        from claude_lit.analyzers.concept_mapper import ConceptMapper
     except ImportError:
         print("❌ ConceptMapper 未安裝，請確認 src/analyzers/concept_mapper.py 已建立")
         return
@@ -1863,7 +1862,7 @@ def _get_default_bib_path() -> str:
 
 def _load_bib_entries(bib_path: str) -> dict:
     """載入 BibTeX 檔案並返回 {cite_key: entry} 字典"""
-    from src.integrations.bibtex_parser import BibTeXParser
+    from claude_lit.integrations.bibtex_parser import BibTeXParser
     bib_path = Path(bib_path)
     if not bib_path.exists():
         print(f"⚠️  找不到 BibTeX 檔案：{bib_path}")
@@ -1883,7 +1882,7 @@ def _load_bib_entries(bib_path: str) -> dict:
 def cmd_import_zettel(args):
     """匯入 Zettelkasten 卡片資料夾"""
     from pathlib import Path
-    from src.utils.zettel_importer import import_zettel_folder
+    from claude_lit.utils.zettel_importer import import_zettel_folder
 
     folder_path = Path(args.folder)
     if not folder_path.exists():
@@ -1921,7 +1920,7 @@ def cmd_import_zettel(args):
 def cmd_import_zettel_all(args):
     """批次匯入所有 Zettelkasten 卡片"""
     from pathlib import Path
-    from src.utils.zettel_importer import import_all_zettel_folders, summarize_import_results
+    from claude_lit.utils.zettel_importer import import_all_zettel_folders, summarize_import_results
 
     base_path = Path(args.path)
     if not base_path.exists():
@@ -2076,7 +2075,7 @@ def cmd_vector_reset(args):
 
 def cmd_vector_sync(args):
     """同步向量資料庫（只處理缺失的）"""
-    from src.embeddings.providers import GeminiEmbedder
+    from claude_lit.embeddings.providers import GeminiEmbedder
 
     print("\n" + "=" * 60)
     print("🔄 同步向量資料庫")

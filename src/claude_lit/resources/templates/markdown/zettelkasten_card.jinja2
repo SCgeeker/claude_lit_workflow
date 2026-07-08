@@ -1,0 +1,43 @@
+---
+title: "{{ title }}"
+description: |-
+  {{ core_summary }}
+---
+
+## 說明
+{{ detailed_explanation }}
+
+## 連結網絡
+
+{% if foundation_links %}
+**基於** → {% for link in foundation_links %}[[{{ link }}]]{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+{% if derived_links %}
+**導向** → {% for link in derived_links %}[[{{ link }}]]{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+{% if related_links %}
+**相關** ↔ {% for link in related_links %}[[{{ link }}]]{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+{% if contrast_links %}
+**對比** ⚡ {% for link in contrast_links %}[[{{ link }}]]{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+## 來源脈絡
+- 📄 **文獻**: {{ citation }}
+{% if section %}- 📍 **位置**: {{ section }}{% if page_number %}, p.{{ page_number }}{% endif %}{% endif %}
+{% if context %}- 🎯 **情境**: {{ context }}{% endif %}
+
+## 個人筆記
+
+{% if personal_notes %}
+{{ personal_notes }}
+{% else %}
+🤖 **AI**:
+
+✍️ **Human**:
+{% endif %}
+
+{% if open_questions %}
+## 待解問題
+{{ open_questions }}
+{% endif %}

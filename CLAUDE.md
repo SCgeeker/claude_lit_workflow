@@ -28,20 +28,26 @@
 
 ```
 claude_lit_workflow/
-├── setup.py               # 設定助手 CLI ← 新增
-├── make_slides.py         # 投影片生成 CLI
-├── generate_zettel.py     # Zettel 生成 CLI
-├── generate_zettel_batch.py # 批次 Zettel 生成
+├── src/claude_lit/        # 正規 Python package（wheel 安裝即用）
+│   ├── api/               # 核心 API（pydantic Request/Result、錯誤、進度）
+│   ├── cli/               # CLI 薄殼（slides / zettel / setup_check）
+│   ├── mcp_server/        # MCP server（stdio + Streamable HTTP）
+│   ├── generators/        # SlideMaker / ZettelMaker
+│   ├── extractors/        # PDF / URL 抽取
+│   ├── resource_loader.py # 資源解析（cwd 覆蓋 > 套件內建）
+│   ├── resources/         # 套件內建模板與預設設定
+│   └── ...                # utils / knowledge_base / integrations（詳見 src/CLAUDE.md）
 │
-├── analyze_paper.py       # [暫停] 論文分析 CLI
-├── kb_manage.py           # [暫停] 知識庫管理 CLI
-├── generate_embeddings.py # [暫停] 向量嵌入 CLI
+├── generate_zettel_batch.py # 批次 Zettel 生成（腳本）
+├── analyze_paper.py       # [暫停] 論文分析（uv run python analyze_paper.py）
+├── kb_manage.py           # [暫停] 知識庫管理
+├── generate_embeddings.py # [暫停] 向量嵌入
 │
-├── pyproject.toml         # uv 專案配置
-├── src/                   # 源碼模組 → src/CLAUDE.md
+├── openspec/              # SDD 規格（specs = 行為真相來源）
+├── pyproject.toml         # uv 專案配置（entry points 指向 claude_lit.*）
 ├── output/                # 輸出 → output/CLAUDE.md
-├── templates/             # 模板 → templates/CLAUDE.md
-├── config/                # 配置 → config/CLAUDE.md
+├── templates/             # 模板（cwd 覆蓋層，可直接編輯）→ templates/CLAUDE.md
+├── config/                # 配置（cwd 覆蓋層）→ config/CLAUDE.md
 └── docs/                  # 文檔 → docs/CLAUDE.md
 ```
 
@@ -70,6 +76,10 @@ uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
 # 設定檢查
 uv run setup
+
+# MCP server（任何支援 MCP 的 LLM 平台皆可串接）
+uv run mcp-server                                  # stdio
+uv run mcp-server --transport http --port 8765     # Streamable HTTP
 ```
 
 ### 完整指令說明
@@ -141,5 +151,5 @@ output/zettelkasten_notes/
 
 ---
 
-**版本**: 0.11.0
-**更新日期**: 2026-03-30
+**版本**: 0.12.0
+**更新日期**: 2026-07-08（MCP server + 正規 package 化，SDD 流程見 openspec/）

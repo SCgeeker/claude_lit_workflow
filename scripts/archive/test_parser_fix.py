@@ -5,7 +5,7 @@
 """
 
 from pathlib import Path
-from src.generators.zettel_maker import ZettelMaker
+from claude_lit.generators.zettel_maker import ZettelMaker
 import shutil
 from datetime import datetime
 

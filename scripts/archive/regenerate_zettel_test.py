@@ -8,8 +8,8 @@ import os
 import shutil
 from pathlib import Path
 from datetime import datetime
-from src.generators.zettel_maker import ZettelMaker
-from src.integrations.llm_provider import LLMProvider
+from claude_lit.generators.zettel_maker import ZettelMaker
+from claude_lit.integrations.llm_provider import LLMProvider
 
 def backup_existing_cards(paper_dir):
     """备份现有卡片"""

@@ -24,17 +24,17 @@ import os
 #     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 添加src到路徑
-sys.path.insert(0, str(Path(__file__).parent))
+
 
 # Import logger
-from src.utils.logger import logger
+from claude_lit.utils.logger import logger
 
-from src.extractors import PDFExtractor
-from src.knowledge_base import KnowledgeBaseManager
+from claude_lit.extractors import PDFExtractor
+from claude_lit.knowledge_base import KnowledgeBaseManager
 
 # 導入質量檢查和修復工具
 try:
-    from src.checkers.quality_checker import QualityChecker
+    from claude_lit.checkers.quality_checker import QualityChecker
 except ImportError:
     QualityChecker = None
 
@@ -45,22 +45,22 @@ except ImportError:
 
 # 導入 Citekey 相關模組
 try:
-    from src.utils.citekey_resolver import CitykeyResolver
+    from claude_lit.utils.citekey_resolver import CitykeyResolver
 except ImportError:
     CitykeyResolver = None
 
 try:
-    from src.integrations.bibtex_parser import BibTeXParser
+    from claude_lit.integrations.bibtex_parser import BibTeXParser
 except ImportError:
     BibTeXParser = None
 
 try:
-    from src.integrations.ris_parser import RISParser
+    from claude_lit.integrations.ris_parser import RISParser
 except ImportError:
     RISParser = None
 
 try:
-    from src.integrations.doi_resolver import DOIResolver
+    from claude_lit.integrations.doi_resolver import DOIResolver
 except ImportError:
     DOIResolver = None
 

@@ -3,7 +3,7 @@
 向量數據庫使用範例
 """
 
-from src.embeddings.vector_db import VectorDatabase
+from claude_lit.embeddings.vector_db import VectorDatabase
 import numpy as np
 
 db = VectorDatabase(persist_directory="chroma_db")
