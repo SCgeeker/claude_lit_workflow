@@ -83,6 +83,8 @@ downloads/
 
 # Archive (personal use)
 archive/
+# openspec 的已歸檔 change 是規格歷史，需隨 git 同步
+!openspec/changes/archive/
 
 # System files
 Thumbs.db

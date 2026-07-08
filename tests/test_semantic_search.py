@@ -7,12 +7,13 @@
 import sys
 import io
 
-# UTF-8 編碼（Windows 支援）
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+import pytest
 
-from src.embeddings.providers import GeminiEmbedder
-from src.embeddings.vector_db import VectorDatabase
+# 需要即時 Gemini embedding API；text-embedding-004 已棄用（404），屬暫停的 embeddings 功能
+pytestmark = pytest.mark.skip(reason="需要即時 Gemini API 且嵌入模型已棄用；embeddings 功能暫停中")
+
+from claude_lit.embeddings.providers import GeminiEmbedder
+from claude_lit.embeddings.vector_db import VectorDatabase
 
 
 def test_semantic_search():

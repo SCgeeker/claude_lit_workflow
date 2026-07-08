@@ -6,8 +6,14 @@
 import sys
 from datetime import datetime
 
+import pytest
+
+# 腳本式端到端測試（函式參數非 pytest fixture），屬暫停的 agent 功能；
+# 需手動執行：python tests/test_agent_e2e.py
+pytestmark = pytest.mark.skip(reason="腳本式 e2e 測試，非 pytest 相容；agent 功能暫停中")
+
 # 導入Agent（Agent內部會處理UTF-8編碼）
-from src.agents import KnowledgeBaseManagerAgent
+from claude_lit.agents import KnowledgeBaseManagerAgent
 
 
 def test_agent_initialization():

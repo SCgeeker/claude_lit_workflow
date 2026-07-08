@@ -12,9 +12,8 @@ from pathlib import Path
 
 # 強制 UTF-8 輸出（解決 Windows 編碼問題）
 if sys.stdout.encoding != 'utf-8':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
-from src.knowledge_base.kb_manager import KnowledgeBaseManager
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
+from claude_lit.knowledge_base.kb_manager import KnowledgeBaseManager
 
 
 def test_manual_linking():

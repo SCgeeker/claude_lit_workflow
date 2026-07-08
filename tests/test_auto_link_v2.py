@@ -15,12 +15,11 @@ from pathlib import Path
 
 # 修复Windows终端UTF-8编码
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
 # 添加 src 到路径
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from knowledge_base import KnowledgeBaseManager
+from claude_lit.knowledge_base import KnowledgeBaseManager
 import sqlite3
 
 
