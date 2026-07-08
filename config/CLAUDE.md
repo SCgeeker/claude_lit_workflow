@@ -19,7 +19,7 @@ knowledge_base:
 llm:
   default_provider: "google"
   google:
-    model: "gemini-2.0-flash-exp"
+    model: "gemini-2.0-flash"
   ollama:
     url: "http://localhost:11434"
     model: "llama3.3:70b"

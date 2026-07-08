@@ -28,7 +28,11 @@
 
 ---
 {% endif %}
+{% if source_type == "web_url" %}
+請為網頁文章「{{ topic }}」創建Zettelkasten原子筆記卡片集，共{{ card_count }}張卡片。此來源為一般網頁（非學術論文），卡片應聚焦論點（argument）、洞見（insight）、主張（claim）而非實驗方法或統計結果。
+{% else %}
 請為論文「{{ topic }}」創建Zettelkasten原子筆記卡片集，共{{ card_count }}張卡片（comprehensive 模式可依需要超過此數量）。
+{% endif %}
 
 **必須嚴格遵守以下要求**：
 1. **生成完整的 {{ card_count }} 張卡片**（不是示例，是實際可用的卡片）
@@ -161,6 +165,9 @@ Please write all content in English.
    - 理論文獻: concept (60%) > question (20%) > method (15%) > finding (5%)
    - 實證研究: finding (40%) > method (30%) > concept (20%) > question (10%)
    - 綜述文獻: concept (50%) > finding (30%) > question (15%) > method (5%)
+{% if source_type == "web_url" %}
+   - 網頁文章: concept (50%) > question (30%) > finding (20%)（無 method 類型）
+{% endif %}
 4. **連結建立**: 優先建立文獻內脈絡關聯（同文獻卡片間），自然延伸到相關概念
 
 {% if slides_content %}

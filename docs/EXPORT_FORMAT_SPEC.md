@@ -129,7 +129,7 @@ graph TD
 ```yaml
 ---
 title: "卡片標題"
-summary: |-
+description: |-
   "原文摘錄或核心概念的簡要描述"
 ---
 ```
@@ -139,7 +139,7 @@ summary: |-
 | 欄位 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | `title` | string | 是 | 卡片標題（中文） |
-| `summary` | string | 是 | 核心概念摘要 |
+| `description` | string | 是 | 核心概念摘要 |
 
 ### 內容區塊
 

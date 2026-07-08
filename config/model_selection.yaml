@@ -51,7 +51,7 @@ models:
   # Experimantal (Legacy)
   gemini_exp:
     provider: "google"
-    model_name: "gemini-2.0-flash-exp"
+    model_name: "gemini-2.0-flash"
     priority: 9
     free_quota: true
     daily_limit: 100  # 估計的每日免費調用次數
