@@ -9,12 +9,18 @@ import os
 from pathlib import Path
 from typing import Tuple
 
+import requests
+
 from .models import OptionCatalog, ProviderReport, ProviderStatus
 from .prompts import _load_styles_config
 
 
 # 偵測用的預設 Gemini 模型；可經 GOOGLE_MODEL 環境變數覆寫，避免模型下架時需改碼
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+
+# NVIDIA NIM（OpenAI 相容）；偵測用輕量模型，可經 NVIDIA_TEST_MODEL 覆寫
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+DEFAULT_NVIDIA_TEST_MODEL = "meta/llama-3.1-8b-instruct"
 
 
 def _check_google() -> Tuple[bool, str]:
@@ -94,14 +100,40 @@ def _check_ollama() -> Tuple[bool, str]:
         return False, f"無法連線 {url}: {str(e)[:50]}"
 
 
+def _check_nvidia() -> Tuple[bool, str]:
+    key = os.getenv("NVIDIA_API_KEY", "")
+    if not key or "your" in key.lower():
+        return False, "未設定 NVIDIA_API_KEY"
+    model_name = os.getenv("NVIDIA_TEST_MODEL") or DEFAULT_NVIDIA_TEST_MODEL
+    try:
+        resp = requests.post(
+            f"{NVIDIA_BASE_URL}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model_name,
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 5,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return True, f"{model_name} 可用"
+    except Exception as e:
+        return False, f"連線失敗: {str(e)[:60]}"
+
+
 PROVIDERS = [
     ("google", "Google Gemini", _check_google),
     ("openai", "OpenAI", _check_openai),
     ("anthropic", "Anthropic Claude", _check_anthropic),
     ("ollama", "Ollama（本地）", _check_ollama),
+    ("nvidia", "NVIDIA NIM", _check_nvidia),
 ]
 
-# 優先順序：速度與成本平衡
+# 優先順序：速度與成本平衡（nvidia 不列入自動建議——大模型成本高，須使用者明確選擇）
 PRIORITY = ["google", "anthropic", "openai", "ollama"]
 
 

@@ -126,7 +126,7 @@ def main():
 
     parser.add_argument('--model', type=str, default=None, help='LLM 模型名稱（預設：自動選擇）')
     parser.add_argument('--llm-provider', type=str, default='auto',
-                        choices=['auto', 'ollama', 'google', 'openai', 'anthropic'],
+                        choices=['auto', 'ollama', 'google', 'openai', 'anthropic', 'nvidia'],
                         help='LLM 提供者（預設：auto）')
     parser.add_argument('--selection-strategy', type=str, default='balanced',
                         choices=['balanced', 'quality_first', 'cost_first', 'speed_first'],

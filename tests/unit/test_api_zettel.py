@@ -58,6 +58,18 @@ class TestGenerateZettel:
         result = generate_zettel(req)
         assert result.cite_key == "Test-2024"
 
+    def test_passes_zettel_task_type(self, fake_pdf, tmp_path, monkeypatch):
+        """zettel API 須傳 task_type='zettelkasten'（NVIDIA 任務分流依此選 qwen thinking）"""
+        output = FIXTURE.read_text(encoding="utf-8")
+        captured = {}
+        monkeypatch.setattr(
+            SlideMaker, "call_llm",
+            lambda self, prompt, **kw: captured.update(kw) or (output, "nvidia"),
+        )
+        req = ZettelRequest(pdf=fake_pdf, add_to_kb=False, output_dir=tmp_path / "out")
+        generate_zettel(req)
+        assert captured.get("task_type") == "zettelkasten"
+
     def test_explicit_cite_key_wins(self, mock_llm, fake_pdf, tmp_path):
         req = ZettelRequest(
             pdf=fake_pdf, cite_key="Barsalou-1999", add_to_kb=False,

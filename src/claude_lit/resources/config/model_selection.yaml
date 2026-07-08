@@ -48,6 +48,41 @@ models:
       - "reasoning"
       - "long_context"
 
+  # NVIDIA NIM - 學術文獻大模型（須明確指定 --llm-provider nvidia）
+  nvidia_nemotron_ultra:
+    provider: "nvidia"
+    model_name: "nvidia/llama-3.1-nemotron-ultra-253b-v1"
+    priority: 8
+    free_quota: false
+    quality_score: 5
+    speed: "slow"
+    best_for:
+      - "slides_comprehensive"
+      - "literature_review"
+      - "academic_writing"
+    supports_chinese: true
+    max_context: 128000
+    features:
+      - "reasoning_optimized"
+      - "high_quality"
+
+  nvidia_qwen_thinking:
+    provider: "nvidia"
+    model_name: "qwen/qwen3-next-80b-a3b-thinking"
+    priority: 8
+    free_quota: false
+    quality_score: 4.8
+    speed: "medium"
+    best_for:
+      - "zettelkasten"
+      - "concept_extraction"
+      - "deep_analysis"
+    supports_chinese: true
+    max_context: 128000
+    features:
+      - "thinking_tokens"
+      - "chain_of_thought"
+
   # Experimantal (Legacy)
   gemini_exp:
     provider: "google"

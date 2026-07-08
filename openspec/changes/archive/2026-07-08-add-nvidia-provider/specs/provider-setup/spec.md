@@ -1,8 +1,7 @@
-# provider-setup Specification
+# provider-setup Spec Delta
 
-## Purpose
-TBD - created by archiving change extract-core-api. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: 供應商偵測 API
 系統 SHALL 提供 `check_providers() -> ProviderReport`，逐一檢查 Google Gemini、OpenAI、Anthropic、Ollama、OpenRouter、NVIDIA NIM 的可用性，並回傳建議供應商。此 API MUST NOT 直接寫入 stdout。
 
@@ -22,16 +21,7 @@ TBD - created by archiving change extract-core-api. Update Purpose after archive
 - **WHEN** 呼叫 `check_providers()`
 - **THEN** 回傳的 `providers` 清單含 name 為 `nvidia`、display_name 含「NVIDIA」的項目；`NVIDIA_API_KEY` 未設定或含 `nvapi-your` 佔位時 `available=False` 且原因為未設定
 
-### Requirement: 選項目錄 API
-系統 SHALL 提供 `list_options() -> OptionCatalog`，回傳風格、詳細程度、語言的完整目錄（鍵值與繁中說明）。目錄內容 MUST 來自 `templates/styles/academic_styles.yaml`，MUST NOT 於 CLI 硬編碼。
-
-#### Scenario: 目錄完整性
-- **WHEN** 呼叫 `list_options()`
-- **THEN** 回傳含 7 種投影片風格、5 種詳細程度、3 種語言，每項附非空說明文字
-
-#### Scenario: CLI 與 API 目錄一致
-- **WHEN** CLI 執行 `--list-options`
-- **THEN** 顯示內容來自 `list_options()` 的回傳值（單一真相來源）
+## ADDED Requirements
 
 ### Requirement: NVIDIA NIM 供應商生成
 系統 SHALL 支援以 NVIDIA NIM（OpenAI 相容 endpoint `https://integrate.api.nvidia.com/v1`）作為 LLM 供應商。呼叫 MUST 以 `NVIDIA_API_KEY` 進行 Bearer 認證；金鑰 MUST 只從環境載入，MUST NOT 出現在回傳內容中。
@@ -58,4 +48,3 @@ TBD - created by archiving change extract-core-api. Update Purpose after archive
 #### Scenario: 明確 model 覆寫分流
 - **WHEN** 以 `provider="nvidia"`、`model="meta/llama-3.1-8b-instruct"` 生成
 - **THEN** 實際使用的模型為 `meta/llama-3.1-8b-instruct`（不套用任務分流預設）
-

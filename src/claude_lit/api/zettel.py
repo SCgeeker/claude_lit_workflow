@@ -218,7 +218,7 @@ def generate_zettel(
     emit(ProgressEvent(stage="llm", message=f"正在生成 {card_count} 張原子筆記卡片..."))
     try:
         llm_output, used_provider = maker.call_llm(
-            zettel_prompt, model=request.model, max_tokens=max_tokens
+            zettel_prompt, model=request.model, max_tokens=max_tokens, task_type="zettelkasten"
         )
     except RuntimeError as e:
         raise ProviderUnavailableError(

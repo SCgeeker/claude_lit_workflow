@@ -80,6 +80,20 @@ except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 
+# NVIDIA NIM（OpenAI 相容）
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+
+
+def _nvidia_default_model(task_type: Optional[str]) -> str:
+    """依生成任務選 NVIDIA 預設模型（可經環境變數覆寫，避免模型更名時需改碼）。
+
+    zettel 卡片需深度概念提取 → qwen thinking；其餘（投影片/摘要）→ nemotron ultra。
+    """
+    if task_type and "zettel" in task_type.lower():
+        return os.getenv("NVIDIA_ZETTEL_MODEL") or "qwen/qwen3-next-80b-a3b-thinking"
+    return os.getenv("NVIDIA_SLIDES_MODEL") or "nvidia/llama-3.1-nemotron-ultra-253b-v1"
+
+
 class SlideMaker:
     """
     投影片生成器
@@ -402,6 +416,11 @@ class SlideMaker:
         if os.getenv('OPENROUTER_API_KEY'):
             providers.append('openrouter')
 
+        # 檢查 NVIDIA NIM
+        _nvidia_key = os.getenv('NVIDIA_API_KEY', '')
+        if _nvidia_key and 'your' not in _nvidia_key.lower():
+            providers.append('nvidia')
+
         return providers
 
     def call_llm(self,
@@ -468,6 +487,9 @@ class SlideMaker:
                 elif attempt_provider == 'openrouter':
                     used_model = actual_model or "anthropic/claude-3.5-sonnet"
                     result = self.call_openrouter(prompt, used_model, timeout, max_tokens)
+                elif attempt_provider == 'nvidia':
+                    used_model = actual_model or _nvidia_default_model(task_type)
+                    result = self.call_nvidia(prompt, used_model, timeout, max_tokens)
                 else:
                     continue
 
@@ -774,6 +796,54 @@ class SlideMaker:
             raise RuntimeError(f"OpenRouter API call failed: {e}")
         except (KeyError, IndexError) as e:
             raise RuntimeError(f"Failed to parse OpenRouter response: {e}")
+
+    def call_nvidia(self,
+                   prompt: str,
+                   model: str = "meta/llama-3.1-8b-instruct",
+                   timeout: int = 300,
+                   max_tokens: int = 4096) -> str:
+        """
+        調用 NVIDIA NIM API（OpenAI 相容 endpoint）生成內容
+
+        Args:
+            prompt: 提示詞
+            model: 模型名稱（如 nvidia/llama-3.1-nemotron-ultra-253b-v1）
+            timeout: 超時時間（秒）
+            max_tokens: 最大生成 tokens 數（默認 4096）
+
+        Returns:
+            生成的內容
+
+        支援的模型範例：
+            - nvidia/llama-3.1-nemotron-ultra-253b-v1（學術文獻，slides 預設）
+            - qwen/qwen3-next-80b-a3b-thinking（深度推理，zettel 預設）
+            - meta/llama-3.1-8b-instruct（快速低成本）
+        """
+        api_key = os.getenv('NVIDIA_API_KEY')
+        if not api_key:
+            raise ValueError("NVIDIA_API_KEY not set. Please add it to .env file")
+
+        url = f"{NVIDIA_BASE_URL}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        data = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=data, timeout=timeout)
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content']
+        except requests.exceptions.Timeout:
+            raise RuntimeError(f"NVIDIA NIM API call timeout after {timeout}s")
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"NVIDIA NIM API call failed: {e}")
+        except (KeyError, IndexError) as e:
+            raise RuntimeError(f"Failed to parse NVIDIA NIM response: {e}")
 
     def parse_slides(self, content: str) -> List[Dict[str, str]]:
         """

@@ -102,6 +102,59 @@ class TestCheckProviders:
         assert "gemini-2.5-pro" in msg
 
 
+class TestCheckNvidia:
+    def test_unset_key(self, monkeypatch):
+        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+        ok, msg = providers_mod._check_nvidia()
+        assert ok is False
+        assert "未設定" in msg
+
+    def test_placeholder_key_treated_as_unset(self, monkeypatch):
+        monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-your-key-here")
+        ok, msg = providers_mod._check_nvidia()
+        assert ok is False
+        assert "未設定" in msg
+
+    def test_available_with_mocked_http(self, monkeypatch):
+        monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-realLookingKey")
+        captured = {}
+
+        class FakeResp:
+            status_code = 200
+
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"choices": [{"message": {"content": "Hi"}}]}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["url"] = url
+            captured["headers"] = headers or {}
+            return FakeResp()
+
+        import claude_lit.api.providers as p
+        monkeypatch.setattr(p.requests, "post", fake_post)
+
+        ok, msg = providers_mod._check_nvidia()
+        assert ok is True
+        assert "integrate.api.nvidia.com" in captured["url"]
+        assert captured["headers"].get("Authorization", "").startswith("Bearer ")
+
+    def test_included_in_check_providers(self, monkeypatch):
+        # 全部 mock 為不可用時，nvidia 仍出現在清單
+        monkeypatch.setattr(
+            providers_mod, "PROVIDERS",
+            providers_mod.PROVIDERS,  # 使用真實清單
+        )
+        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+        report = check_providers()
+        names = {p.name for p in report.providers}
+        assert "nvidia" in names
+        nvidia = next(p for p in report.providers if p.name == "nvidia")
+        assert "NVIDIA" in nvidia.display_name
+
+
 class TestListOptions:
     def test_catalog_completeness(self):
         catalog = list_options()

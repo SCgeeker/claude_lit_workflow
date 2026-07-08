@@ -65,6 +65,9 @@ uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 | Anthropic Claude | `ANTHROPIC_API_KEY` | claude-haiku-4-5 |
 | OpenAI | `OPENAI_API_KEY` | gpt-4o-mini |
 | Ollama（本地） | `OLLAMA_URL` | llama3.2 |
+| NVIDIA NIM | `NVIDIA_API_KEY` | nemotron-ultra-253b（slides）/ qwen3-next-thinking（zettel） |
+
+NVIDIA NIM 為學術文獻大模型（OpenAI 相容），以 `--llm-provider nvidia` 啟用，未指定 `--model` 時依任務自動分流（slides→nemotron、zettel→qwen thinking）。253B 模型回應較慢，MCP client 的 tool timeout 建議設更大。
 
 ```bash
 # .env 範例

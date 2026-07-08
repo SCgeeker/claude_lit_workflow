@@ -147,7 +147,7 @@ def main():
     parser.add_argument('--model', type=str, default=None,
                        help='LLM模型名稱（預設：None，使用智能選擇）')
     parser.add_argument('--llm-provider', type=str, default='auto',
-                       choices=['auto', 'ollama', 'google', 'openai', 'anthropic'],
+                       choices=['auto', 'ollama', 'google', 'openai', 'anthropic', 'nvidia'],
                        help='LLM提供者（預設：auto自動選擇）')
     parser.add_argument('--api-key', type=str,
                        help='API金鑰（Google/OpenAI/Anthropic用，或設置環境變數）')

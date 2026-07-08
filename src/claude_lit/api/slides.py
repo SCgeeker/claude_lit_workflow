@@ -99,7 +99,7 @@ def generate_slides(
     emit(ProgressEvent(stage="llm", message="正在生成投影片內容..."))
     try:
         llm_output, used_provider = maker.call_llm(
-            prompt, model=request.model, max_tokens=max_tokens
+            prompt, model=request.model, max_tokens=max_tokens, task_type="slides"
         )
     except RuntimeError as e:
         raise ProviderUnavailableError(

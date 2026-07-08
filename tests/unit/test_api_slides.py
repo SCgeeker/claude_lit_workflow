@@ -51,6 +51,18 @@ class TestGenerateSlides:
         assert result.language == "chinese"
         assert result.preview  # llm 輸出預覽非空
 
+    def test_passes_slides_task_type(self, tmp_path, monkeypatch):
+        """slides API 須傳 task_type='slides'（NVIDIA 任務分流依此選 nemotron）"""
+        output = FIXTURE.read_text(encoding="utf-8")
+        captured = {}
+        monkeypatch.setattr(
+            SlideMaker, "call_llm",
+            lambda self, prompt, **kw: captured.update(kw) or (output, "nvidia"),
+        )
+        req = SlideRequest(topic="t", output_path=tmp_path / "o.md")
+        generate_slides(req)
+        assert captured.get("task_type") == "slides"
+
     def test_progress_events_in_order(self, mock_llm, tmp_path):
         events = []
         req = SlideRequest(topic="t", output_path=tmp_path / "o.md")
