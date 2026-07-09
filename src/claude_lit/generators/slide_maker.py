@@ -84,14 +84,18 @@ except ImportError:
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 
-def _nvidia_default_model(task_type: Optional[str]) -> str:
-    """依生成任務選 NVIDIA 預設模型（可經環境變數覆寫，避免模型更名時需改碼）。
+# NVIDIA 預設模型：用實測穩定可用、content 結構完整的 8b instruct。
+# 原大模型 nemotron-ultra-253b（404）與 qwen3-next-thinking（410 Gone）已失效；
+# 大型 instruct 模型在此 endpoint 不是逾時就是連線不穩，reasoning 模型的 content 又不穩定。
+# 進階使用者可經 NVIDIA_SLIDES_MODEL / NVIDIA_ZETTEL_MODEL 覆寫成大模型（如 nemotron-3-super-120b-a12b）。
+_NVIDIA_DEFAULT_MODEL = "meta/llama-3.1-8b-instruct"
 
-    zettel 卡片需深度概念提取 → qwen thinking；其餘（投影片/摘要）→ nemotron ultra。
-    """
+
+def _nvidia_default_model(task_type: Optional[str]) -> str:
+    """依生成任務選 NVIDIA 預設模型（可經環境變數覆寫）。"""
     if task_type and "zettel" in task_type.lower():
-        return os.getenv("NVIDIA_ZETTEL_MODEL") or "qwen/qwen3-next-80b-a3b-thinking"
-    return os.getenv("NVIDIA_SLIDES_MODEL") or "nvidia/llama-3.1-nemotron-ultra-253b-v1"
+        return os.getenv("NVIDIA_ZETTEL_MODEL") or _NVIDIA_DEFAULT_MODEL
+    return os.getenv("NVIDIA_SLIDES_MODEL") or _NVIDIA_DEFAULT_MODEL
 
 
 class SlideMaker:
@@ -378,7 +382,7 @@ class SlideMaker:
         if "google" in available:
             return "google", os.getenv("GOOGLE_MODEL") or "gemini-2.5-flash"
         elif "anthropic" in available:
-            return "anthropic", "claude-3-haiku-20240307"
+            return "anthropic", "claude-haiku-4-5-20251001"
         elif "ollama" in available:
             return "ollama", "gpt-oss:20b-cloud"
         else:
@@ -482,7 +486,7 @@ class SlideMaker:
                     used_model = actual_model or "gpt-3.5-turbo"
                     result = self.call_openai(prompt, used_model)
                 elif attempt_provider == 'anthropic':
-                    used_model = actual_model or "claude-3-haiku-20240307"
+                    used_model = actual_model or "claude-haiku-4-5-20251001"
                     result = self.call_anthropic(prompt, used_model, max_tokens)
                 elif attempt_provider == 'openrouter':
                     used_model = actual_model or "anthropic/claude-3.5-sonnet"
@@ -713,7 +717,7 @@ class SlideMaker:
 
     def call_anthropic(self,
                       prompt: str,
-                      model: str = "claude-3-sonnet-20240229",
+                      model: str = "claude-haiku-4-5-20251001",
                       max_tokens: int = 8192) -> str:
         """
         調用Anthropic Claude API生成內容
@@ -807,17 +811,17 @@ class SlideMaker:
 
         Args:
             prompt: 提示詞
-            model: 模型名稱（如 nvidia/llama-3.1-nemotron-ultra-253b-v1）
+            model: 模型名稱（預設 meta/llama-3.1-8b-instruct）
             timeout: 超時時間（秒）
             max_tokens: 最大生成 tokens 數（默認 4096）
 
         Returns:
-            生成的內容
+            生成的內容（reasoning 模型 content 為空時 fallback reasoning_content）
 
-        支援的模型範例：
-            - nvidia/llama-3.1-nemotron-ultra-253b-v1（學術文獻，slides 預設）
-            - qwen/qwen3-next-80b-a3b-thinking（深度推理，zettel 預設）
-            - meta/llama-3.1-8b-instruct（快速低成本）
+        實測可用的模型範例：
+            - meta/llama-3.1-8b-instruct（預設；快速、content 結構穩定）
+            - nvidia/nemotron-3-super-120b-a12b（大模型；reasoning 型，需 content/reasoning fallback）
+        注意：nemotron-ultra-253b（404）與 qwen3-next-thinking（410）已失效，勿使用。
         """
         api_key = os.getenv('NVIDIA_API_KEY')
         if not api_key:
@@ -837,7 +841,16 @@ class SlideMaker:
         try:
             response = requests.post(url, headers=headers, json=data, timeout=timeout)
             response.raise_for_status()
-            return response.json()['choices'][0]['message']['content']
+            message = response.json()['choices'][0]['message']
+            # reasoning 模型（如 nemotron-3-super）content 可能為空、答案在 reasoning_content；
+            # content 有實質內容時優先用它（不混入思考過程），否則 fallback reasoning_content。
+            content = message.get('content')
+            if content and content.strip():
+                return content
+            reasoning = message.get('reasoning_content')
+            if reasoning and reasoning.strip():
+                return reasoning
+            raise RuntimeError("NVIDIA NIM 回應無可用內容（content 與 reasoning_content 皆空）")
         except requests.exceptions.Timeout:
             raise RuntimeError(f"NVIDIA NIM API call timeout after {timeout}s")
         except requests.exceptions.RequestException as e:

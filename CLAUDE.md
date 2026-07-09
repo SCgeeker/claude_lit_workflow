@@ -103,7 +103,7 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP
 | **Anthropic** | claude-haiku-4-5 | 快速低成本 |
 | **OpenAI** | gpt-4o-mini | 通用 |
 | **Ollama** | llama3.2 | 本地運行 |
-| **NVIDIA NIM** | nemotron-ultra-253b（slides）/ qwen3-next-thinking（zettel） | 學術文獻大模型；`--llm-provider nvidia` 依任務自動分流；253B 回應較慢，client timeout 建議加大 |
+| **NVIDIA NIM** | meta/llama-3.1-8b-instruct（預設） | `--llm-provider nvidia`；大模型經 `NVIDIA_SLIDES_MODEL`/`NVIDIA_ZETTEL_MODEL` 或 `--model` 覆寫（如 nemotron-3-super-120b-a12b）。原 253b/qwen-thinking 已失效 |
 
 ---
 
