@@ -104,6 +104,11 @@ examples/demo_kb_features.py
 examples/kb_interactive.py
 examples/quickstart/kb_query.py
 
+# 個人領域客製（cwd 覆蓋層）：不入 repo，clone 時自動 fallback 套件內建
+# （src/claude_lit/resources/config/custom_*.md）。本機保留個人術語。
+config/custom_slides.md
+config/custom_zettel.md
+
 # 本機檔案
 .env_bak
 *.code-workspace
