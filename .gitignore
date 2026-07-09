@@ -95,6 +95,15 @@ docs/*
 !docs/CLAUDE.md
 !docs/TROUBLESHOOTING.md
 
+# examples/ 停用功能範例（analyze/kb/embeddings/batch/quality/向量搜索）移出 repo，本機保留
+examples/batch_processing/
+examples/quality_checker/
+examples/vector_search/
+examples/knowledge_base/
+examples/demo_kb_features.py
+examples/kb_interactive.py
+examples/quickstart/kb_query.py
+
 # 本機檔案
 .env_bak
 *.code-workspace
