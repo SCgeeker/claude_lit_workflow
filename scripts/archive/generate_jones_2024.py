@@ -7,8 +7,8 @@
 import shutil
 from pathlib import Path
 from datetime import datetime
-from src.generators.zettel_maker import ZettelMaker
-from src.generators.slide_maker import SlideMaker
+from claude_lit.generators.zettel_maker import ZettelMaker
+from claude_lit.generators.slide_maker import SlideMaker
 
 def extract_paper_content(md_path):
     """从 MD 文件提取论文内容"""

@@ -12,8 +12,7 @@ from pathlib import Path
 
 # 強制 UTF-8 輸出
 if sys.stdout.encoding != 'utf-8':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
 def print_flush(msg):
     """強制刷新輸出"""
     print(msg, flush=True)
@@ -62,7 +61,7 @@ def main():
     try:
         # 導入知識庫管理器
         sys.path.insert(0, str(Path(__file__).parent))
-        from src.knowledge_base import KnowledgeBaseManager
+        from claude_lit.knowledge_base import KnowledgeBaseManager
 
         print_flush("✅ 知識庫模組導入成功")
 

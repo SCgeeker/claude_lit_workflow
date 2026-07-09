@@ -1,0 +1,76 @@
+---
+marp: true
+theme: default
+paginate: true
+header: '{{ header_text }}'
+footer: '{{ footer_text }}'
+style: |
+  section {
+    font-family: 'Noto Sans TC', 'Microsoft JhengHei', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 24px;
+    padding: 40px 50px;
+    line-height: 1.4;
+  }
+  h1 {
+    color: #2c3e50;
+    font-size: 42px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    color: #34495e;
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+  ul {
+    margin: 0;
+    padding-left: 1.2em;
+  }
+  li {
+    font-size: 22px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  li li {
+    font-size: 20px;
+  }
+  strong {
+    color: #2980b9;
+  }
+  blockquote {
+    font-size: 18px;
+    border-left: 4px solid #3498db;
+    padding-left: 16px;
+    margin: 16px 0;
+  }
+---
+
+<!-- _class: title -->
+# {{ main_title }}
+
+## {{ subtitle }}
+
+{% if authors %}**{{ authors }}**{% endif %}
+{% if date %}*{{ date }}*{% endif %}
+
+---
+
+{% for slide in slides %}
+<!-- _class: content -->
+## {{ slide.title }}
+
+{% for content_item in slide['items'] %}
+- {{ content_item }}
+{% endfor %}
+
+{% if slide.notes %}
+> **備註**: {{ slide.notes }}
+{% endif %}
+
+---
+
+{% endfor %}
+
+<!-- _class: end -->
+# Thank You
+
+{% if contact %}{{ contact }}{% endif %}

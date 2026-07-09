@@ -1,46 +1,54 @@
 #!/bin/bash
-# 投影片生成器使用範例
+# 投影片生成（uv run slides）使用範例
+# 現役 CLI：來源可用 --pdf / --url / 主題文字；輸出 Markdown（Obsidian Slides / Marp 相容）或 PPTX
 
 # === 基本用法 ===
 
-# 從主題生成投影片
-python make_slides.py "深度學習應用" --style modern_academic --slides 15
+# 從 PDF 生成投影片
+uv run slides --pdf paper.pdf
 
-# 從PDF直接生成（快速模式）
-python make_slides.py "論文摘要" --pdf paper.pdf --style research_methods
+# 從 URL 生成（arXiv / DOI / 出版商頁 / 部落格）
+uv run slides --url https://arxiv.org/abs/1234.56789 --style teaching
 
-# 從PDF分析後生成（知識驅動模式，推薦）
-python make_slides.py "論文摘要" --pdf paper.pdf --analyze-first --style literature_review
+# 從主題文字生成（不帶來源）
+uv run slides "深度學習應用" --style modern_academic --slides 15
 
-# 從知識庫已有論文生成（重用模式）
-python make_slides.py "論文簡報" --from-kb 1 --style modern_academic
+# === 風格與詳細程度 ===
 
-# === 使用不同的 LLM 後端 ===
+# 指定學術風格（classic_academic / modern_academic / clinical /
+#   research_methods / literature_review / case_analysis / teaching）
+uv run slides --pdf paper.pdf --style research_methods --detail detailed
 
-# 使用Google Gemini（更快）
-python make_slides.py "AI研究" --pdf paper.pdf --llm-provider google --model gemini-2.0-flash-exp
+# 語言模式（chinese / english / bilingual）與張數
+uv run slides --pdf paper.pdf --language bilingual --slides 20
 
-# 使用OpenAI
-python make_slides.py "機器學習" --pdf paper.pdf --llm-provider openai --model gpt-4
+# === 選擇 LLM 供應商 ===
 
-# 使用Anthropic Claude
-python make_slides.py "認知科學" --pdf paper.pdf --llm-provider anthropic --model claude-3-haiku
+# Google Gemini（預設推薦）
+uv run slides --pdf paper.pdf --llm-provider google --model gemini-2.5-flash
 
-# 使用本地Ollama
-python make_slides.py "語言學" --pdf paper.pdf --llm-provider ollama --model gemma2:latest
+# OpenAI
+uv run slides --pdf paper.pdf --llm-provider openai --model gpt-4o-mini
 
-# === 自定義格式和風格 ===
+# Anthropic Claude
+uv run slides --pdf paper.pdf --llm-provider anthropic --model claude-haiku-4-5
 
-# 生成雙語投影片
-python make_slides.py "機器學習入門" --style teaching --language bilingual --slides 20
+# 本地 Ollama
+uv run slides --pdf paper.pdf --llm-provider ollama --model llama3.2
 
-# 生成詳細內容
-python make_slides.py "研究方法" --pdf paper.pdf --style research_methods --detail detailed
+# NVIDIA NIM（預設 8b；大模型經 NVIDIA_SLIDES_MODEL 或 --model 覆寫）
+uv run slides --pdf paper.pdf --llm-provider nvidia
 
-# 生成英文投影片
-python make_slides.py "Deep Learning" --pdf paper.pdf --language english --slides 25
+# === 自訂需求與輸出 ===
 
-# === 自定義輸出路徑 ===
+# 命令行自訂需求
+uv run slides --pdf paper.pdf --custom "請使用口語化表達"
 
-# 指定輸出文件名
-python make_slides.py "主題" --pdf paper.pdf --output "output/my_presentation.pptx"
+# 自訂需求檔案（預設讀 config/custom_slides.md；--no-custom 可略過）
+uv run slides --pdf paper.pdf --custom-file my_requirements.md
+
+# 指定輸出路徑與 PPTX 格式
+uv run slides --pdf paper.pdf --format pptx --output "output/my_presentation.pptx"
+
+# 列出所有可用風格 / 詳細度 / 語言
+uv run slides --list-options

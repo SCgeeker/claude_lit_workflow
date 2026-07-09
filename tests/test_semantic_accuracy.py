@@ -14,14 +14,13 @@ import io
 
 # 設置 UTF-8 編碼（Windows 相容性）
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
 # 添加專案根目錄到路徑
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.embeddings import create_manager
+from claude_lit.embeddings import create_manager
 
 
 def calculate_recall_at_k(predictions: List, ground_truth: List, k: int) -> float:

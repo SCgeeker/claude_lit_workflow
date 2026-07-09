@@ -1,5 +1,14 @@
 # templates/ - 模板庫
 
+## 定位：cwd 覆蓋層（package-cli 之後）
+
+套件內建一份預設模板（`src/claude_lit/resources/templates/`，隨 wheel 發佈）。
+執行時的解析順序：**明確傳入路徑 > 目前工作目錄的 `templates/...` > 套件內建**。
+
+- 在 repo 目錄下執行 `uv run slides/zettel` 時，**本目錄優先生效**——直接編輯這裡即可調整 prompt 與輸出格式，不需重新安裝
+- wheel 安裝到其他機器、工作目錄沒有 `templates/` 時，自動使用套件內建版
+- **管理規則**：修改 `prompts/*.jinja2`、`styles/academic_styles.yaml`、`markdown/*.jinja2` 後，需同步到 `src/claude_lit/resources/templates/` 再發佈——`tests/unit/test_resources.py` 會斷言兩份內容一致，漂移時測試失敗提醒
+
 ## 結構
 
 ```

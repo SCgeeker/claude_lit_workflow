@@ -277,7 +277,7 @@ def main():
         print("       --generate-zettel \\")
         print("       --cards 20 \\")
         print("       --llm-provider google \\")
-        print("       --model gemini-2.0-flash-exp \\")
+        print("       --model gemini-2.5-flash \\")
         print("       --workers 2")
     else:
         print("  1. Investigate unresolved entries")

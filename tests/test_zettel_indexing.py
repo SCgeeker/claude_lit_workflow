@@ -14,7 +14,7 @@ from pathlib import Path
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-from src.knowledge_base.kb_manager import KnowledgeBaseManager
+from claude_lit.knowledge_base.kb_manager import KnowledgeBaseManager
 
 
 def test_single_card_parsing():

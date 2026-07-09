@@ -10,10 +10,9 @@ import json
 
 # ========== 防止卡住措施 1：強制 UTF-8 編碼 ==========
 if sys.platform == 'win32' and sys.stdout.encoding != 'utf-8':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
-from src.knowledge_base import KnowledgeBaseManager
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
+from claude_lit.knowledge_base import KnowledgeBaseManager
 
 def main():
     print("=" * 70)

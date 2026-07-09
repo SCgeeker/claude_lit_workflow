@@ -1,0 +1,214 @@
+# 8種學術風格定義 (基於Journal Club逆向工程 + Zettelkasten擴展)
+
+styles:
+  classic_academic:
+    name: "經典學術"
+    name_en: "Classical Academic"
+    description: "傳統學術語言，強調理論和研究方法，適合正式場合"
+    characteristics:
+      - "嚴謹的學術用語"
+      - "理論框架為導向"
+      - "強調研究方法論"
+      - "適合學術會議和期刊"
+
+  modern_academic:
+    name: "現代學術"
+    name_en: "Modern Academic"
+    description: "現代學術語言，結合視覺化和數據，清晰易懂"
+    characteristics:
+      - "清晰簡潔的表達"
+      - "強調數據視覺化"
+      - "結合實例說明"
+      - "平衡深度與易讀性"
+
+  clinical:
+    name: "臨床導向"
+    name_en: "Clinical-Oriented"
+    description: "臨床實務語言，強調臨床應用和病例分析"
+    characteristics:
+      - "以臨床實務為導向"
+      - "強調應用價值"
+      - "包含病例討論"
+      - "連結理論與實踐"
+
+  research_methods:
+    name: "研究方法"
+    name_en: "Research Methods"
+    description: "著重研究設計和統計分析，適合方法學討論"
+    characteristics:
+      - "詳細的研究設計說明"
+      - "統計方法深入分析"
+      - "樣本與測量工具討論"
+      - "方法論的優缺點評估"
+
+  literature_review:
+    name: "文獻回顧"
+    name_en: "Literature Review"
+    description: "系統性文獻整理，比較不同研究結果"
+    characteristics:
+      - "多研究比較"
+      - "系統性整理文獻"
+      - "趨勢與發展脈絡"
+      - "研究空白識別"
+
+  case_analysis:
+    name: "案例分析"
+    name_en: "Case Analysis"
+    description: "以具體案例為主，深入分析個案"
+    characteristics:
+      - "具體案例為中心"
+      - "深入個案分析"
+      - "情境脈絡詳述"
+      - "啟示與學習要點"
+
+  teaching:
+    name: "教學導向"
+    name_en: "Teaching-Oriented"
+    description: "教學語言，循序漸進易懂，適合學習者"
+    characteristics:
+      - "循序漸進的架構"
+      - "豐富的解釋說明"
+      - "概念由淺入深"
+      - "包含學習引導"
+
+  zettelkasten:
+    name: "Zettelkasten卡片盒"
+    name_en: "Zettelkasten"
+    description: "原子化筆記方法，每張卡片為獨立知識單元，強調概念連結"
+    characteristics:
+      - "每張卡片聚焦單一概念（原子筆記）"
+      - "明確標示概念間的連結關係"
+      - "使用語義化ID（領域-日期-序號）"
+      - "強調知識的可組合性與重用性"
+      - "包含前向/反向/相關/對比連結"
+      - "適合知識管理與長期累積"
+    output_format: "markdown"  # 強制Markdown輸出
+    card_types: ["concept", "method", "finding", "question"]
+    link_semantics:
+      foundation: "→ 基於（前置知識）"
+      derived: "→ 導向（延伸概念）"
+      related: "↔ 相關（對等關係）"
+      contrast: "⚡ 對比（差異比較）"
+      parent: "⬆ 上位（更抽象）"
+      child: "⬇ 下位（更具體）"
+    id_format: "{domain}-{date}-{seq}"  # 如: NeuroPsy-20251028-001
+    default_card_count:
+      minimal: 5
+      brief: 8
+      standard: 12
+      detailed: 20
+      comprehensive: 30  # 預設值，LLM 可生成更多（20-30+張）
+    atomic_note_template: |
+      每張原子卡片應包含：
+      - 語義化ID（領域-日期-序號）
+      - 單一核心概念（一句話總結）
+      - 概念詳細說明（2-3段）
+      - 連結網絡（基於/導向/相關/對比）
+      - 來源脈絡（文獻、章節、頁碼）
+      - 個人筆記與思考
+      - 待解問題（可選）
+
+# 5種詳細程度定義
+
+detail_levels:
+  minimal:
+    name: "極簡"
+    name_en: "Minimal"
+    description: "每張投影片2-3個重點，每個重點1句話"
+    points_per_slide: "2-3"
+    sentences_per_point: 1
+    use_cases:
+      - "快速概覽"
+      - "時間受限的簡報"
+      - "高階主管報告"
+
+  brief:
+    name: "簡要"
+    name_en: "Brief"
+    description: "每張投影片3-4個重點，每個重點1-2句話"
+    points_per_slide: "3-4"
+    sentences_per_point: "1-2"
+    use_cases:
+      - "標準簡報"
+      - "團隊分享"
+      - "進度報告"
+
+  standard:
+    name: "標準"
+    name_en: "Standard"
+    description: "每張投影片4-5個重點，每個重點2-3句話"
+    points_per_slide: "4-5"
+    sentences_per_point: "2-3"
+    use_cases:
+      - "Journal Club標準格式"
+      - "學術討論會"
+      - "研討會報告"
+
+  detailed:
+    name: "詳細"
+    name_en: "Detailed"
+    description: "每張投影片5-6個重點，每個重點3-4句話"
+    points_per_slide: "5-6"
+    sentences_per_point: "3-4"
+    use_cases:
+      - "深入分析"
+      - "教學用途"
+      - "專家討論"
+
+  comprehensive:
+    name: "完整"
+    name_en: "Comprehensive"
+    description: "每張投影片6-8個重點，每個重點4-5句話"
+    points_per_slide: "6-8"
+    sentences_per_point: "4-5"
+    use_cases:
+      - "全面性報告"
+      - "技術文件"
+      - "深度教學"
+
+# 3種語言模式
+
+languages:
+  chinese:
+    code: "zh-TW"
+    name: "中文"
+    name_en: "Chinese"
+    instruction: "請使用繁體中文撰寫所有內容。"
+
+  english:
+    code: "en"
+    name: "英文"
+    name_en: "English"
+    instruction: "Please write all content in English."
+
+  bilingual:
+    code: "zh-en"
+    name: "中英雙語"
+    name_en: "Bilingual"
+    instruction: "請使用繁體中文為主，關鍵術語附英文。"
+
+# 投影片格式規範
+
+slide_format:
+  title_slide:
+    format: |
+      ===標題頁===
+      標題：[主標題]
+      副標題：[副標題]
+
+  content_slide:
+    format: |
+      ===投影片{n}===
+      標題：[投影片標題]
+      內容：
+      • [重點1，使用**粗體**標記關鍵詞]
+      • [重點2]
+      • [重點3]
+
+  requirements:
+    - "確保內容邏輯連貫，從淺入深"
+    - "避免內容重複"
+    - "每張投影片聚焦不同面向"
+    - "使用**粗體**標記關鍵詞"
+    - "嚴格按照格式輸出"
+    - "Journal Club應包含：研究背景、研究方法、主要發現、結論與討論等部分"

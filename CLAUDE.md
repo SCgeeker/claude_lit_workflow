@@ -12,15 +12,15 @@
 - **投影片生成** (`uv run slides`): PDF → Markdown 投影片（Obsidian Slides Extended 相容）
 - **原子卡片生成** (`uv run zettel`): PDF / slides → Zettelkasten 卡片
 - **設定助手** (`uv run setup`): 偵測 LLM 連線、給出設定建議
+- **使用嚮導** (`uv run guide`): 導出工具使用說明，或用指定 LLM 依需求回覆建議指令
+- **MCP server** (`uv run mcp-server`): 以 MCP 曝露工具給任何 LLM 平台（stdio + HTTP）
 
 ### 暫停功能
 
-> 知識管理由筆記 App 接管，以下工具暫停開發，程式碼保留。
-
-- `analyze_paper.py` (`uv run analyze`) — 論文分析 + 知識庫收錄
-- `kb_manage.py` (`uv run kb`) — 知識庫管理
-- `generate_embeddings.py` (`uv run embeddings`) — 向量嵌入
-- `src/analyzers/` — 概念網絡分析（Phase 2.4）
+> 知識管理由筆記 App 接管，以下工具暫停開發。
+> 根目錄入口腳本已歸檔（`archive/root_cli_scripts_20260708.zip`，git 歷史可查）；
+> 核心模組保留於 `src/claude_lit/`（analyzers、knowledge_base、embeddings 等）。
+> `slides --analyze-first` 依賴 analyze_paper.py，隨歸檔一併停用。
 
 ---
 
@@ -28,21 +28,22 @@
 
 ```
 claude_lit_workflow/
-├── setup.py               # 設定助手 CLI ← 新增
-├── make_slides.py         # 投影片生成 CLI
-├── generate_zettel.py     # Zettel 生成 CLI
-├── generate_zettel_batch.py # 批次 Zettel 生成
+├── src/claude_lit/        # 正規 Python package（wheel 安裝即用）
+│   ├── api/               # 核心 API（pydantic Request/Result、錯誤、進度）
+│   ├── cli/               # CLI 薄殼（slides / zettel / setup_check）
+│   ├── mcp_server/        # MCP server（stdio + Streamable HTTP）
+│   ├── generators/        # SlideMaker / ZettelMaker
+│   ├── extractors/        # PDF / URL 抽取
+│   ├── resource_loader.py # 資源解析（cwd 覆蓋 > 套件內建）
+│   ├── resources/         # 套件內建模板與預設設定
+│   └── ...                # utils / knowledge_base / integrations（詳見 src/CLAUDE.md）
 │
-├── analyze_paper.py       # [暫停] 論文分析 CLI
-├── kb_manage.py           # [暫停] 知識庫管理 CLI
-├── generate_embeddings.py # [暫停] 向量嵌入 CLI
-│
-├── pyproject.toml         # uv 專案配置
-├── src/                   # 源碼模組 → src/CLAUDE.md
+├── openspec/              # SDD 規格（specs = 行為真相來源）
+├── pyproject.toml         # uv 專案配置（entry points 指向 claude_lit.*）
 ├── output/                # 輸出 → output/CLAUDE.md
-├── templates/             # 模板 → templates/CLAUDE.md
-├── config/                # 配置 → config/CLAUDE.md
-└── docs/                  # 文檔 → docs/CLAUDE.md
+├── templates/             # 模板（cwd 覆蓋層，可直接編輯）→ templates/CLAUDE.md
+├── config/                # 配置（cwd 覆蓋層）→ config/CLAUDE.md
+└── docs/                  # 本機文檔暫存（gitignore；僅 CLAUDE.md/TROUBLESHOOTING 隨 git）→ docs/CLAUDE.md
 ```
 
 ---
@@ -70,11 +71,19 @@ uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
 # 設定檢查
 uv run setup
+
+# 使用嚮導（任何 terminal，不需 MCP client）
+uv run guide                                       # 印出工具使用說明
+uv run guide "把 paper.pdf 做成教學風格投影片" --provider nvidia
+
+# MCP server（任何支援 MCP 的 LLM 平台皆可串接）
+uv run mcp-server                                  # stdio
+uv run mcp-server --transport http --port 8765     # Streamable HTTP
 ```
 
 ### 完整指令說明
 
-參見 [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+執行 `uv run <指令> --help` 或 `uv run guide`（動態列出所有選項與風格）。使用總覽見 [README.md](README.md) / [README.en.md](README.en.md)。
 
 ---
 
@@ -90,10 +99,11 @@ uv run setup
 
 | Provider | 模型 | 用途 |
 |----------|------|------|
-| **Google Gemini** | gemini-2.0-flash-exp | 預設推薦 |
+| **Google Gemini** | gemini-2.5-flash | 預設推薦 |
 | **Anthropic** | claude-haiku-4-5 | 快速低成本 |
 | **OpenAI** | gpt-4o-mini | 通用 |
 | **Ollama** | llama3.2 | 本地運行 |
+| **NVIDIA NIM** | meta/llama-3.1-8b-instruct（預設） | `--llm-provider nvidia`；大模型經 `NVIDIA_SLIDES_MODEL`/`NVIDIA_ZETTEL_MODEL` 或 `--model` 覆寫（如 nemotron-3-super-120b-a12b）。原 253b/qwen-thinking 已失效 |
 
 ---
 
@@ -103,7 +113,7 @@ uv run setup
 
 1. 在 `src/` 中實作模組
 2. 在 `pyproject.toml` 中定義 CLI 入口（如需要）
-3. 更新 `docs/CLI_GUIDE.md`
+3. 更新 `README.md` / `README.en.md`（指令總覽）
 
 ### Citekey 規範
 
@@ -141,5 +151,5 @@ output/zettelkasten_notes/
 
 ---
 
-**版本**: 0.11.0
-**更新日期**: 2026-03-30
+**版本**: 0.12.0
+**更新日期**: 2026-07-08（MCP server + 正規 package 化，SDD 流程見 openspec/）

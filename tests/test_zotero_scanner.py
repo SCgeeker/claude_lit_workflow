@@ -11,14 +11,12 @@ from pathlib import Path
 # 添加src到路徑
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.integrations.bibtex_parser import BibTeXParser
-from src.integrations.zotero_scanner import ZoteroScanner
+from claude_lit.integrations.bibtex_parser import BibTeXParser
+from claude_lit.integrations.zotero_scanner import ZoteroScanner
 
 # 修復Windows終端UTF-8編碼
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
-
+    pass  # 已移除 import 時的 stdout 劫持（會破壞 pytest capture / MCP stdio）
 def main():
     if len(sys.argv) < 3:
         print("使用方式: python test_zotero_scanner.py <pdf_directory> <bib_file>")

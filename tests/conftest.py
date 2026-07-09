@@ -1,9 +1,12 @@
 """
 pytest 配置和共享夾具
+
+claude_lit 由 uv 的 editable install 提供，測試不需要 sys.path 操作。
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture

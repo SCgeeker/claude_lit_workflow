@@ -1,47 +1,38 @@
-# 配置範例：config/settings.yaml 主要配置項
+# 配置範例：config/settings.yaml 主要配置項（現役工具）
+# 說明：多數使用者只需 .env 填 API key 即可；此檔展示可選的預設值覆蓋。
 
-# LLM後端（自動選擇最佳模型）
+# LLM 後端（--llm-provider auto 會自動挑可用者）
 llm:
-  default_backend: "auto"  # 自動選擇最佳模型
+  default_backend: "auto"
   auto_select: true
   ollama:
     base_url: "http://localhost:11434"
-    default_model: "gemma2:latest"
+    default_model: "llama3.2"
   google:
-    default_model: "gemini-2.0-flash-exp"
+    default_model: "gemini-2.5-flash"
   openai:
-    default_model: "gpt-4"
+    default_model: "gpt-4o-mini"
   anthropic:
-    default_model: "claude-3-haiku"
+    default_model: "claude-haiku-4-5"
+  # NVIDIA NIM（OpenAI 相容）：預設用實測穩定的 8b；
+  # 大模型改經 NVIDIA_SLIDES_MODEL / NVIDIA_ZETTEL_MODEL 或 --model 覆寫
+  nvidia:
+    default_model: "meta/llama-3.1-8b-instruct"
 
-# PDF處理
+# PDF 處理
 pdf:
   max_characters: 50000
   extraction_method: "pdfplumber"  # 或 "pypdf2"
 
-# 簡報生成
+# 投影片生成（uv run slides）
 slides:
   default_style: "modern_academic"
   default_detail: "standard"
   default_language: "chinese"
   default_slides: 15
 
-# 知識庫
-knowledge_base:
-  root_directory: "knowledge_base"
-  database_path: "knowledge_base/index.db"
-  indexing:
-    auto_index: true
-    full_text_search: true
-
-# 批次處理
-batch_processing:
-  max_workers: 3
-  error_handling: "skip"  # skip / retry / stop
-  timeout: 300  # 秒
-
-# 向量搜索
-vector_search:
-  default_provider: "gemini"  # gemini / ollama
-  embedding_dimension: 768  # gemini: 768, ollama: 2560
-  persist_directory: "chroma_db"
+# Zettelkasten 卡片生成（uv run zettel）
+zettel:
+  default_detail: "standard"
+  default_language: "chinese"
+  default_domain: "Research"
