@@ -12,9 +12,11 @@ custom_zettel.md、settings.yaml、model_selection.yaml，隨 wheel 發佈）。
   `--custom-file` 明確指定使用，不隨套件發佈
 - MCP server 以 `config://custom-slides`、`config://custom-zettel`、
   `config://settings`（脫敏）resources 唯讀曝露這些檔案
-- **管理規則**：修改四個有套件內建版的檔案後，需同步到
-  `src/claude_lit/resources/config/`——`tests/unit/test_resources.py`
-  斷言兩份一致，漂移時測試失敗提醒
+- **管理規則（分兩類）**：
+  - `settings.yaml`、`model_selection.yaml` 為開發者維護的預設，修改後需
+    同步到 `src/claude_lit/resources/config/`——`test_resources` 斷言一致
+  - `custom_slides.md`、`custom_zettel.md` 為使用者自訂檔，repo 版填你的
+    術語、套件內建版保持空白範本，**兩者本應不同、不需同步**
 
 ## 主配置
 

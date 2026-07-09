@@ -8,6 +8,8 @@ import pytest
 import claude_lit.cli.slides as make_slides_mod
 import claude_lit.cli.zettel as generate_zettel_mod
 import claude_lit.cli.setup_check as setup_mod
+import claude_lit.cli.guide as guide_mod
+from claude_lit.api.guide import GuideResult
 from claude_lit.api.models import (
     ProviderReport,
     ProviderStatus,
@@ -155,3 +157,41 @@ class TestSetupCli:
         monkeypatch.setattr(setup_mod, "check_env_file", lambda: True)
         assert setup_mod.main() == 1
         assert "沒有可用的 LLM 提供者" in capsys.readouterr().out
+
+
+class TestGuideCli:
+    def test_no_request_prints_guide(self, monkeypatch, capsys):
+        monkeypatch.setattr(guide_mod, "build_usage_guide", lambda: "使用說明內容 uv run slides")
+        monkeypatch.setattr(sys, "argv", ["guide"])
+        assert guide_mod.main() == 0
+        assert "使用說明內容" in capsys.readouterr().out
+
+    def test_request_calls_suggest(self, monkeypatch, capsys):
+        captured = {}
+
+        def fake_suggest(text, **kw):
+            captured["text"] = text
+            captured["kw"] = kw
+            return GuideResult(suggestion="uv run slides --pdf x.pdf", provider_used="anthropic")
+
+        monkeypatch.setattr(guide_mod, "suggest_command", fake_suggest)
+        monkeypatch.setattr(sys, "argv", ["guide", "把 pdf 做成投影片", "--provider", "anthropic"])
+        assert guide_mod.main() == 0
+        assert captured["text"] == "把 pdf 做成投影片"
+        assert captured["kw"]["provider"] == "anthropic"
+        out = capsys.readouterr().out
+        assert "uv run slides --pdf x.pdf" in out
+        assert "anthropic" in out
+
+    def test_provider_unavailable_exit_1(self, monkeypatch, capsys):
+        from claude_lit.api.errors import ProviderUnavailableError
+
+        def fake_suggest(text, **kw):
+            raise ProviderUnavailableError("無法使用供應商 google", hint="執行 uv run setup")
+
+        monkeypatch.setattr(guide_mod, "suggest_command", fake_suggest)
+        monkeypatch.setattr(sys, "argv", ["guide", "需求", "--provider", "google"])
+        assert guide_mod.main() == 1
+        out = capsys.readouterr().out
+        assert "無法使用供應商" in out
+        assert "setup" in out

@@ -55,6 +55,7 @@ dev = [
 setup = "claude_lit.cli.setup_check:main"
 slides = "claude_lit.cli.slides:main"
 zettel = "claude_lit.cli.zettel:main"
+guide = "claude_lit.cli.guide:main"
 mcp-server = "claude_lit.mcp_server.__main__:main"
 
 # 暫停工具（analyze/kb/embeddings）不入 wheel，改以 `uv run python analyze_paper.py` 執行

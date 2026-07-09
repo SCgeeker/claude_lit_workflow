@@ -9,16 +9,23 @@ from claude_lit.resource_loader import resolve_resource
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 
-RESOURCES = [
+# 開發者維護的預設：repo 版與套件內建版須一致（發佈前同步，防漂移）
+SYNCED_RESOURCES = [
     "templates/prompts/journal_club_template.jinja2",
     "templates/prompts/zettelkasten_template.jinja2",
+    "templates/prompts/usage_guide.jinja2",
     "templates/styles/academic_styles.yaml",
     "templates/markdown/zettelkasten_card.jinja2",
     "templates/markdown/zettelkasten_index.jinja2",
-    "config/custom_slides.md",
-    "config/custom_zettel.md",
     "config/settings.yaml",
     "config/model_selection.yaml",
+]
+
+# 使用者自訂檔：repo 版是使用者填入的領域術語，套件內建版是空白範本——
+# 兩者本應不同，只驗證內建版存在且非空（供新安裝者 fallback）
+USER_RESOURCES = [
+    "config/custom_slides.md",
+    "config/custom_zettel.md",
 ]
 
 
@@ -50,11 +57,19 @@ class TestResolveOrder:
 
 
 class TestBuiltinCompleteness:
-    @pytest.mark.parametrize("relpath", RESOURCES)
-    def test_builtin_exists_and_matches_repo(self, relpath, tmp_path, monkeypatch):
-        """套件內建資源存在，且與 repo 版本內容一致（防止兩份預設漂移）"""
+    @pytest.mark.parametrize("relpath", SYNCED_RESOURCES)
+    def test_synced_matches_repo(self, relpath, tmp_path, monkeypatch):
+        """開發者維護的預設：套件內建版與 repo 版內容一致（防漂移）"""
         repo_file = REPO_ROOT / relpath
         monkeypatch.chdir(tmp_path)
         builtin = resolve_resource(relpath)
         assert builtin.exists()
         assert builtin.read_text(encoding="utf-8") == repo_file.read_text(encoding="utf-8")
+
+    @pytest.mark.parametrize("relpath", USER_RESOURCES)
+    def test_user_resource_builtin_exists(self, relpath, tmp_path, monkeypatch):
+        """使用者自訂檔：只驗證套件內建範本存在且非空（不要求與 repo 版一致）"""
+        monkeypatch.chdir(tmp_path)
+        builtin = resolve_resource(relpath)
+        assert builtin.exists()
+        assert builtin.read_text(encoding="utf-8").strip()

@@ -82,6 +82,8 @@ DEFAULT_LLM_PROVIDER=google   # 或 auto（自動偵測）
 | 指令 | 功能 |
 |------|------|
 | `uv run setup` | 偵測 LLM 連線，顯示設定建議 |
+| `uv run guide` | 印出工具使用說明（可貼到任何 LLM） |
+| `uv run guide "需求" --provider X` | 用指定 LLM 依需求回覆建議的 CLI 指令 |
 | `uv run slides --pdf paper.pdf` | 從 PDF 生成投影片 |
 | `uv run zettel --pdf paper.pdf` | 從 PDF 生成原子卡片 |
 | `uv run zettel --slides-file slides.md` | 結合已編修的投影片生成卡片 |
@@ -166,7 +168,10 @@ slides --pdf paper.pdf            # cwd 的 custom_slides.md 優先生效
 
 ### 維護規則（開發者）
 
-templates/、config/ 中有套件內建版的 10 個檔案（模板 6 個＋custom_slides、custom_zettel、settings.yaml、model_selection.yaml），修改後發佈前需同步一份到 `src/claude_lit/resources/`——`tests/unit/test_resources.py` 斷言兩份內容一致，漂移時測試失敗提醒。
+兩類檔案處理方式不同：
+
+- **開發者維護的預設**（模板 6 個 + `settings.yaml`、`model_selection.yaml`）：修改後發佈前需同步一份到 `src/claude_lit/resources/`；`tests/unit/test_resources.py` 斷言兩份一致，漂移時測試失敗提醒。
+- **使用者自訂檔**（`config/custom_slides.md`、`custom_zettel.md`）：repo 版是你填入的領域術語，套件內建版保持空白範本供新安裝者 fallback——**兩者本應不同**，不需同步。
 
 ## 輸出格式
 

@@ -12,6 +12,7 @@
 - **投影片生成** (`uv run slides`): PDF → Markdown 投影片（Obsidian Slides Extended 相容）
 - **原子卡片生成** (`uv run zettel`): PDF / slides → Zettelkasten 卡片
 - **設定助手** (`uv run setup`): 偵測 LLM 連線、給出設定建議
+- **使用嚮導** (`uv run guide`): 導出工具使用說明，或用指定 LLM 依需求回覆建議指令
 - **MCP server** (`uv run mcp-server`): 以 MCP 曝露工具給任何 LLM 平台（stdio + HTTP）
 
 ### 暫停功能
@@ -70,6 +71,10 @@ uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
 # 設定檢查
 uv run setup
+
+# 使用嚮導（任何 terminal，不需 MCP client）
+uv run guide                                       # 印出工具使用說明
+uv run guide "把 paper.pdf 做成教學風格投影片" --provider nvidia
 
 # MCP server（任何支援 MCP 的 LLM 平台皆可串接）
 uv run mcp-server                                  # stdio
