@@ -94,6 +94,28 @@ class TestGenerateSlides:
         generate_slides(req, progress=events.append)
         assert events[0].stage == "extract"
 
+    def test_url_topic_sanitized_in_filename(self, mock_llm, tmp_path, monkeypatch):
+        """URL 來源時 topic 為整串網址，用於檔名須清理非法字元（回歸：WinError 123）"""
+        import claude_lit.api.slides as slides_mod
+        from claude_lit.api.sources import SourceContent
+
+        monkeypatch.setattr(
+            slides_mod, "resolve_source",
+            lambda **kw: SourceContent(
+                content="內容", topic="https://arxiv.org/html/2301.00001",
+                source_type="academic_url",
+            ),
+        )
+        monkeypatch.chdir(tmp_path)  # 輸出到臨時目錄，不指定 output_path 走預設命名
+        req = SlideRequest(url="https://arxiv.org/html/2301.00001")
+        result = generate_slides(req)  # 不應拋 OSError
+
+        out = Path(result.output_files[0])
+        assert out.exists()
+        # 檔名不含 Windows 非法字元
+        for ch in '<>:"/\\|?*':
+            assert ch not in out.name
+
     def test_pdf_not_found(self):
         req = SlideRequest(pdf="D:/nonexistent/x.pdf")
         with pytest.raises(SourceNotFoundError):

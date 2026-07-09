@@ -6,6 +6,7 @@
 """
 
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -18,6 +19,18 @@ from .progress import ProgressCallback, ProgressEvent
 from .sources import resolve_source
 
 logger = logging.getLogger("claude_lit_workflow.api.slides")
+
+# Windows / POSIX 檔名非法字元（含 URL 的 : /）與控制字元
+_ILLEGAL_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def _sanitize_filename(name: str, max_len: int = 80) -> str:
+    """把 topic 轉為安全檔名：非法字元換底線、去頭尾點與空白、限長。
+
+    URL 來源時 topic 可能是整串網址（含 : /），未清理會使路徑非法（WinError 123）。
+    """
+    cleaned = _ILLEGAL_FILENAME_CHARS.sub("_", name).strip(". ")
+    return cleaned[:max_len] or "slides"
 
 # 依詳細程度動態估算 max_tokens（沿用原 SlideMaker.generate_slides 的參數）
 _TOKENS_PER_SLIDE = {
@@ -122,7 +135,7 @@ def generate_slides(
         base_name = str(Path(request.output_path).with_suffix(""))
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base_name = f"output/{topic}_{request.style.value}_{timestamp}"
+        base_name = f"output/{_sanitize_filename(topic)}_{request.style.value}_{timestamp}"
 
     output_files = []
     fmt = request.output_format.value

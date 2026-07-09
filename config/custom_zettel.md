@@ -37,10 +37,10 @@ LLM 會嚴格遵守下表的翻譯，未列出的術語會自動保持「中文�
 
 | 英文術語 | 中文翻譯 |
 |----------|----------|
-| （範例）Reinforcement Learning | 強化學習 |
-| （範例）Attention Mechanism     | 注意力機制 |
+| Reinforcement Learning | 強化學習 |
 | Embodied Cognition | 體現認知 |
 | Robustness | 穩健性 |
+| Classifier | 量詞 |
 
 
 > 請刪除範例列，填入你自己領域的術語。
