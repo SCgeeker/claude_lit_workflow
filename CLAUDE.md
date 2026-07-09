@@ -43,7 +43,7 @@ claude_lit_workflow/
 ├── output/                # 輸出 → output/CLAUDE.md
 ├── templates/             # 模板（cwd 覆蓋層，可直接編輯）→ templates/CLAUDE.md
 ├── config/                # 配置（cwd 覆蓋層）→ config/CLAUDE.md
-└── docs/                  # 文檔 → docs/CLAUDE.md
+└── docs/                  # 本機文檔暫存（gitignore；僅 CLAUDE.md/TROUBLESHOOTING 隨 git）→ docs/CLAUDE.md
 ```
 
 ---
@@ -83,7 +83,7 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP
 
 ### 完整指令說明
 
-參見 [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+執行 `uv run <指令> --help` 或 `uv run guide`（動態列出所有選項與風格）。使用總覽見 [README.md](README.md) / [README.en.md](README.en.md)。
 
 ---
 
@@ -113,7 +113,7 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP
 
 1. 在 `src/` 中實作模組
 2. 在 `pyproject.toml` 中定義 CLI 入口（如需要）
-3. 更新 `docs/CLI_GUIDE.md`
+3. 更新 `README.md` / `README.en.md`（指令總覽）
 
 ### Citekey 規範
 

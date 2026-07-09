@@ -206,8 +206,8 @@ examples/
 ## 🔗 相關文檔
 
 - **完整開發文檔**: [CLAUDE.md](../CLAUDE.md)
-- **專案結構**: [docs/PROJECT_STRUCTURE.md](../docs/PROJECT_STRUCTURE.md)
-- **快速開始指南**: [docs/QUICKSTART.md](../docs/QUICKSTART.md)
+- **快速開始與指令總覽**: [README.md](../README.md) / [README.en.md](../README.en.md)
+- **行為規格**: [openspec/](../openspec/)
 
 ---
 

@@ -765,7 +765,7 @@ class SlideMaker:
         支援的模型範例：
             - anthropic/claude-3.5-sonnet (推薦用於 Zettelkasten)
             - anthropic/claude-3-haiku (快速經濟)
-            - google/gemini-2.0-flash (免費配額)
+            - google/gemini-2.5-flash (快速經濟)
         """
         api_key = os.getenv('OPENROUTER_API_KEY')
         if not api_key:

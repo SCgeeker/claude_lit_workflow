@@ -89,6 +89,12 @@ archive/
 # 知識庫資料檔（本地資料，不入版控；備份見 archive/）
 knowledge_base/index.db
 
+# docs/ 為本機開發暫存區（session 紀錄、階段報告、停用功能設計稿），不入 repo；
+# 僅保留下列策展文檔隨 git 同步。要新增對外文檔時，在此以 !docs/<檔名> 明確納入。
+docs/*
+!docs/CLAUDE.md
+!docs/TROUBLESHOOTING.md
+
 # 本機檔案
 .env_bak
 *.code-workspace

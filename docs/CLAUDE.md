@@ -1,33 +1,22 @@
 # docs/ - 專案文檔
 
-## 核心文檔
+> 本目錄現為**本機開發暫存區**，`.gitignore` 已排除整個 `docs/`。
+> 只有下列策展文檔隨 git 同步、對外發佈；其餘（session 紀錄、階段報告、停用功能設計稿等）僅存在於本機，不 push。
+
+## 隨 repo 發佈的文檔
 
 | 文檔 | 說明 |
 |------|------|
-| `CLI_GUIDE.md` | CLI 操作指南（uv run 指令）|
-| `CITEKEY_DESIGN_SPEC.md` | Citekey 設計規格 |
-| `QUICKSTART.md` | 快速開始 |
-| `TROUBLESHOOTING.md` | 故障排除 |
-| `README.md` | 文檔索引 |
+| `CLAUDE.md` | 本說明（docs/ 目錄用途）|
+| `TROUBLESHOOTING.md` | 故障排除（僅涵蓋現役 slides / zettel / setup / guide / mcp-server）|
 
-## ProgramVerse 整合
+## 真相來源
 
-| 文檔 | 說明 |
-|------|------|
-| `EXPORT_FORMAT_SPEC.md` | Zettel 輸出格式規範 |
-| `IMPORT_TOOL_SPEC.md` | 匯入工具規格 |
-| `QUICKADD_TEMPLATER_INTEGRATION_PLAN.md` | Obsidian 整合計畫 |
-
-## 子目錄
-
-- `archive/` - 歸檔文檔
-- `modules/` - 模組詳細文檔
-- `cards_2_connections/` - 概念網絡文檔（暫停）
-- `session_work/` - 工作記錄
+- **使用說明**：根目錄 `README.md`（繁）/ `README.en.md`（英）為單一真相來源
+- **行為規格**：`openspec/`（SDD，specs 為行為真相來源）
+- **指令選項**：`uv run <指令> --help` 或 `uv run guide`（動態列出，不再維護獨立 CLI 文檔）
 
 ## 維護指引
 
-新增文檔時：
-1. 核心功能文檔放在 `docs/` 根目錄
-2. 模組詳細說明放在 `docs/modules/`
-3. 過時文檔移到 `docs/archive/`
+- 開發過程的 session 紀錄、階段報告、實驗筆記直接寫在 `docs/` 本機即可，會被 gitignore，不會誤入 repo。
+- 若某份文檔要對外發佈，於 `.gitignore` 以 `!docs/<檔名>` 明確納入，並在上表登記。
