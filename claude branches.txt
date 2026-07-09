@@ -1,1 +1,0 @@
-claude --resume 5a24bfd0-2cd0-48ce-97aa-692a3fe6b7ab laptop
