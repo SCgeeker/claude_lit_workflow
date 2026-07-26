@@ -1301,7 +1301,7 @@ def make_slides(topic: str,
     pdf_content = None
     if pdf_path:
         from ..extractors import PDFExtractor
-        extractor = PDFExtractor(max_chars=10000)  # Journal Club限制
+        extractor = PDFExtractor(max_chars=50000)  # 與 api.slides._SLIDES_MAX_CHARS 同步
         result = extractor.extract(pdf_path)
         pdf_content = result['full_text']
 

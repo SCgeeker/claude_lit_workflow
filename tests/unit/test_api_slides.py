@@ -116,6 +116,38 @@ class TestGenerateSlides:
         for ch in '<>:"/\\|?*':
             assert ch not in out.name
 
+    def test_source_char_limit_matches_template(self, mock_llm, tmp_path, monkeypatch):
+        """PDF 抽取上限須為 50000 字元，對齊 journal_club_template 的 truncate(50000)"""
+        import claude_lit.api.slides as slides_mod
+        from claude_lit.api.sources import SourceContent
+
+        captured = {}
+        monkeypatch.setattr(
+            slides_mod, "resolve_source",
+            lambda **kw: captured.update(kw)
+            or SourceContent(content="內容", topic="p", source_type="pdf"),
+        )
+        pdf = tmp_path / "p.pdf"
+        pdf.write_bytes(b"%PDF-1.4 fake")
+        generate_slides(SlideRequest(pdf=pdf, output_path=tmp_path / "o.md"))
+        assert captured["max_chars"] == 50000
+
+    def test_prompt_render_uses_same_limit(self, tmp_path, monkeypatch):
+        """render_slides_prompt 的上限須與 generate_slides 同步，否則預覽與實際輸出不一致"""
+        import claude_lit.api.prompts as prompts_mod
+        from claude_lit.api.sources import SourceContent
+
+        captured = {}
+        monkeypatch.setattr(
+            prompts_mod, "resolve_source",
+            lambda **kw: captured.update(kw)
+            or SourceContent(content="內容", topic="p", source_type="pdf"),
+        )
+        pdf = tmp_path / "p.pdf"
+        pdf.write_bytes(b"%PDF-1.4 fake")
+        prompts_mod.render_slides_prompt(SlideRequest(pdf=pdf))
+        assert captured["max_chars"] == 50000
+
     def test_pdf_not_found(self):
         req = SlideRequest(pdf="D:/nonexistent/x.pdf")
         with pytest.raises(SourceNotFoundError):

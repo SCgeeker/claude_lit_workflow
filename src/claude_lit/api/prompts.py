@@ -21,7 +21,7 @@ from .models import SlideRequest, ZettelRequest
 from .sources import SourceContent, resolve_source
 
 _ZETTEL_MAX_CHARS = 40000
-_SLIDES_MAX_CHARS = 10000
+_SLIDES_MAX_CHARS = 50000  # 與 api.slides._SLIDES_MAX_CHARS 同步
 
 
 def _load_styles_config() -> dict:
