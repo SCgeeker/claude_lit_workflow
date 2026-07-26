@@ -228,7 +228,7 @@ def generate_zettel(
 
     # 5. 解析
     emit(ProgressEvent(stage="parse", message="正在解析卡片..."))
-    cards = zettel_maker.parse_llm_output(llm_output)
+    cards = zettel_maker.parse_llm_output(llm_output, cite_key=cite_key)
     if not cards:
         raise LLMGenerationError(
             "無法解析任何卡片（LLM 輸出不含 ===CARD:=== 區塊）",
