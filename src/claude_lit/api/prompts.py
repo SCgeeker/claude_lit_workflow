@@ -20,8 +20,11 @@ from .errors import CiteKeyMissingError
 from .models import SlideRequest, ZettelRequest
 from .sources import SourceContent, resolve_source
 
-_ZETTEL_MAX_CHARS = 40000
-_SLIDES_MAX_CHARS = 10000
+# 抽取上限（單一真相；api.zettel 直接沿用本常數，勿另立字面量）。
+# 120000 字元 ≈ 30k tokens，足以容納整篇論文（含長 review）全文，
+# 涵蓋 Gemini 1M / Claude 200k / GPT-4o-mini 128k / NVIDIA llama-3.1-8b 128k。
+_ZETTEL_MAX_CHARS = 120000
+_SLIDES_MAX_CHARS = 50000  # 與 api.slides._SLIDES_MAX_CHARS 同步
 
 
 def _load_styles_config() -> dict:

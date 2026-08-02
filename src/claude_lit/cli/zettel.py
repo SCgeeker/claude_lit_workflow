@@ -123,6 +123,8 @@ def main():
     parser.add_argument('--force', action='store_true', help='強制重新生成（刪除舊卡片後重新入庫）')
     parser.add_argument('--cross-link', action='store_true', help='啟用跨論文連結（查詢知識庫相關概念）')
     parser.add_argument('--no-embed', action='store_true', help='跳過向量嵌入（稍後用 uv run embeddings 補上）')
+    parser.add_argument('--no-ground', action='store_true',
+                        help='關閉 grounding 驗證（不抹除定位不到原文的卡片；供批量重跑/除錯）')
 
     parser.add_argument('--model', type=str, default=None, help='LLM 模型名稱（預設：自動選擇）')
     parser.add_argument('--llm-provider', type=str, default='auto',
@@ -192,6 +194,7 @@ def main():
             force=args.force,
             cross_link=args.cross_link,
             embed=not args.no_embed,
+            ground=not args.no_ground,
             provider=args.llm_provider,
             model=args.model,
             selection_strategy=args.selection_strategy,

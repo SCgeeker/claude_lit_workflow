@@ -135,6 +135,31 @@ class TestZettelCli:
         assert generate_zettel_mod.main() == 0
         assert captured["request"].cite_key == "Barsalou-1999"
 
+    def test_ground_default_true(self, monkeypatch):
+        captured = {}
+        monkeypatch.setattr(
+            generate_zettel_mod, "generate_zettel",
+            lambda request, **kw: captured.update(request=request) or _fake_zettel_result(),
+        )
+        monkeypatch.setattr(
+            sys, "argv", ["zettel", "--pdf", "p.pdf", "--no-custom", "--no-add-to-kb"]
+        )
+        assert generate_zettel_mod.main() == 0
+        assert captured["request"].ground is True
+
+    def test_no_ground_disables(self, monkeypatch):
+        captured = {}
+        monkeypatch.setattr(
+            generate_zettel_mod, "generate_zettel",
+            lambda request, **kw: captured.update(request=request) or _fake_zettel_result(),
+        )
+        monkeypatch.setattr(
+            sys, "argv",
+            ["zettel", "--pdf", "p.pdf", "--no-ground", "--no-custom", "--no-add-to-kb"],
+        )
+        assert generate_zettel_mod.main() == 0
+        assert captured["request"].ground is False
+
 
 class TestSetupCli:
     def _report(self, recommended):

@@ -42,8 +42,10 @@ _TOKENS_PER_SLIDE = {
 }
 _MAX_TOKENS_CAP = 16000
 
-# 投影片內容來源上限（Journal Club 格式限制）
-_SLIDES_MAX_CHARS = 10000
+# 投影片內容來源上限，對齊 journal_club_template 的 truncate(50000)，避免雙重截斷。
+# 50000 字元 ≈ 13k tokens（中文最壞約 25k），加上 _MAX_TOKENS_CAP(16000) 的輸出，
+# 仍在後端 context 65536 之內；一般期刊論文正文可完整涵蓋至 References 前。
+_SLIDES_MAX_CHARS = 50000
 
 
 def _compute_max_tokens(slide_count: int, detail: str) -> int:

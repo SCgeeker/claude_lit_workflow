@@ -25,6 +25,17 @@ except ImportError:
     PYPDF2_AVAILABLE = False
 
 
+# 參考文獻／書目區的獨立標題行（允許 "6. References"、"7 REFERENCES" 等編號前綴）。
+# 以整行錨定（^...$ + MULTILINE），避免誤中內文中提及的 "references"。
+_REFERENCES_HEADING = re.compile(
+    r'^\s*(?:\d+\.?\s+|[IVXLC]+\.?\s+)?'
+    r'(?:References(?:\s+and\s+Notes)?|Reference\s+List|Bibliography'
+    r'|Literature\s+Cited|Works\s+Cited|參考文獻|參考書目|引用文獻)'
+    r'\s*$',
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
 class PDFExtractor:
     """PDF文本和結構提取器"""
 
@@ -70,6 +81,9 @@ class PDFExtractor:
         if extract_tables and self.method == "pdfplumber":
             tables = self._extract_tables_with_pdfplumber(pdf_path)
 
+        # 先剝除參考文獻區，把字元預算讓給正文（Results/Discussion），再套用 max_chars 上限
+        full_text, refs_stripped = self._strip_references(full_text)
+
         # 限制字元數
         if len(full_text) > self.max_chars:
             full_text = full_text[:self.max_chars]
@@ -79,6 +93,9 @@ class PDFExtractor:
 
         # 提取結構化信息
         structure = self._parse_structure(full_text)
+        # references 已被剝除時，正文內已無書目標題，改由剝除旗標保留「本文有參考文獻」訊號
+        if refs_stripped:
+            structure["references_found"] = True
 
         return {
             "file_path": str(pdf_path),
@@ -86,11 +103,36 @@ class PDFExtractor:
             "full_text": full_text,
             "char_count": len(full_text),
             "truncated": truncated,
+            "references_stripped": refs_stripped,
             "structure": structure,
             "tables": tables,
             "table_count": len(tables),
             "extraction_method": self.method
         }
+
+    def _strip_references(self, text: str) -> tuple:
+        """剝除參考文獻／書目區段，回收字元預算給正文。
+
+        僅裁切「獨立標題行」形式的 References/Bibliography 等（見 _REFERENCES_HEADING），
+        且限定位於文件 20% 之後，避免誤砍目錄條目或內文提及。取最後一個符合者為書目起點
+        （書目通常是全文最後一個主要區塊）。找不到時原樣回傳。
+
+        Returns:
+            (裁切後文字, 是否有剝除)
+        """
+        if not text:
+            return text, False
+
+        matches = list(_REFERENCES_HEADING.finditer(text))
+        if not matches:
+            return text, False
+
+        guard = len(text) * 0.2  # 前 20%（含目錄）內的符合視為誤中，不裁
+        for match in reversed(matches):
+            if match.start() >= guard:
+                return text[:match.start()].rstrip(), True
+
+        return text, False
 
     def _extract_with_pdfplumber(self, pdf_path: Path) -> str:
         """使用pdfplumber提取文字"""

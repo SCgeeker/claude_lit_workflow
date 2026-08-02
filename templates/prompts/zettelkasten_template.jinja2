@@ -1,10 +1,10 @@
 {# Zettelkasten原子筆記生成模板 #}
 
-【重要】這是實際生成任務，不是提供範例說明！請務必完整生成所有 {{ card_count }} 張卡片。
+【重要】這是實際生成任務，不是提供範例說明。以 {{ card_count }} 張為**目標上限**，非硬性配額：只為能從原文**逐字定位**的原子概念出卡；可 grounding 的概念不足 {{ card_count }} 個時，**寧可少出**，**嚴禁**用推斷、臆測或目錄／章節標題湊數。卡片數量服從論文實質內容。
 
 {% if pdf_content %}
 參考論文內容（請優先依據以下論文內容提取原子化概念）：
-{{ pdf_content | truncate(40000) }}
+{{ pdf_content }}
 
 {% endif %}
 {% if existing_related_cards and existing_related_cards|length > 0 %}
@@ -29,14 +29,14 @@
 ---
 {% endif %}
 {% if source_type == "web_url" %}
-請為網頁文章「{{ topic }}」創建Zettelkasten原子筆記卡片集，共{{ card_count }}張卡片。此來源為一般網頁（非學術論文），卡片應聚焦論點（argument）、洞見（insight）、主張（claim）而非實驗方法或統計結果。
+請為網頁文章「{{ topic }}」創建Zettelkasten原子筆記卡片集，以 {{ card_count }} 張為目標上限（可 grounding 的論點不足時少出，勿湊數）。此來源為一般網頁（非學術論文），卡片應聚焦論點（argument）、洞見（insight）、主張（claim）而非實驗方法或統計結果。
 {% else %}
-請為論文「{{ topic }}」創建Zettelkasten原子筆記卡片集，共{{ card_count }}張卡片（comprehensive 模式可依需要超過此數量）。
+請為論文「{{ topic }}」創建Zettelkasten原子筆記卡片集，以 {{ card_count }} 張為目標上限；概念充足的 comprehensive 模式可再增補，概念不足時務必少出而非杜撰。
 {% endif %}
 
 **必須嚴格遵守以下要求**：
-1. **生成完整的 {{ card_count }} 張卡片**（不是示例，是實際可用的卡片）
-2. **每張卡片必須有獨立的ID**：從 `{{ cite_key }}-001` 到 `{{ cite_key }}-{{ "%03d" | format(card_count) }}`
+1. **每張卡片都必須是實際可用的卡片**（不是示例）；數量以 {{ card_count }} 張為上限，**只出能從原文逐字定位的概念**，不足則**寧可少出**，**嚴禁**杜撰、推斷填充或把目錄／章節標題當正文出卡
+2. **每張卡片必須有獨立的ID**：從 `{{ cite_key }}-001` 起連續編號（實際張數可少於 {{ card_count }}）
 3. **禁止添加任何「篇幅限制」或「續篇說明」的文字**
 4. **確保輸出完整且可直接使用**，不要用省略號或佔位符
 
@@ -117,7 +117,7 @@ Please write all content in English.
 
 **重要提醒**：所有卡片ID必須嚴格遵守格式 `{{ cite_key }}-XXX`，其中XXX為三位數字（001, 002, 003...）。連結中引用其他卡片時，也必須使用完整的破折號格式。
 
-以此類推，直到第{{ card_count }}張卡片。
+以此類推，直到涵蓋完論文所有可 grounding 的原子概念為止（至多第 {{ card_count }} 張，不足則提前結束）。
 
 **卡片類型定義**：
 - **concept（概念）**: 理論性概念、定義、原理
@@ -160,7 +160,7 @@ Please write all content in English.
 
 **卡片生成策略**：
 1. **核心概念識別**: 從論文關鍵詞、摘要、核心論述中提取，由 LLM 自行判斷數量
-2. **卡片數量**: 根據詳細程度 ({{ card_count }} 張)，comprehensive 模式可超過 30 張
+2. **卡片數量**: {{ card_count }} 張為**上限**而非硬性配額；概念充足時 comprehensive 模式可再增補，概念不足時**寧可少出**，不得為湊數而杜撰
 3. **類型分配**: 依文獻類型調整
    - 理論文獻: concept (60%) > question (20%) > method (15%) > finding (5%)
    - 實證研究: finding (40%) > method (30%) > concept (20%) > question (10%)

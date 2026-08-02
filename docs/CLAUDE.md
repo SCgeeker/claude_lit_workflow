@@ -9,6 +9,7 @@
 |------|------|
 | `CLAUDE.md` | 本說明（docs/ 目錄用途）|
 | `TROUBLESHOOTING.md` | 故障排除（僅涵蓋現役 slides / zettel / setup / guide / mcp-server）|
+| `LLM_BACKEND.md` | 本專案 Ollama 後端（NCHC 遠端 GPU）設定與品質觀察 |
 
 ## 真相來源
 

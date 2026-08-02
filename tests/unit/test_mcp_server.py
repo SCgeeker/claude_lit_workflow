@@ -93,6 +93,23 @@ class TestGenerateTools:
             result = await client.call_tool("generate_zettel", {"pdf": "D:/papers/p.pdf"})
             assert not result.isError
         assert captured["req"].add_to_kb is False  # MCP 預設比 CLI 保守
+        assert captured["req"].ground is True       # grounding 預設啟用
+
+    @pytest.mark.anyio
+    async def test_generate_zettel_ground_passthrough(self, monkeypatch):
+        captured = {}
+
+        def fake(req, **kw):
+            captured["req"] = req
+            return _fake_zettel_result()
+
+        monkeypatch.setattr(server_mod, "api_generate_zettel", fake)
+        async with client_session(server_mod.mcp) as client:
+            result = await client.call_tool(
+                "generate_zettel", {"pdf": "D:/papers/p.pdf", "ground": False}
+            )
+            assert not result.isError
+        assert captured["req"].ground is False
 
     @pytest.mark.anyio
     async def test_invalid_params_is_error(self):

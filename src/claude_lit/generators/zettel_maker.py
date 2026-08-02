@@ -84,7 +84,9 @@ class ZettelMaker:
         """
         return f"{cite_key}-{sequence:03d}"
 
-    def parse_llm_output(self, llm_output: str) -> List[Dict[str, Any]]:
+    def parse_llm_output(
+        self, llm_output: str, cite_key: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         解析LLM生成的Zettelkasten卡片內容
 
@@ -113,6 +115,8 @@ class ZettelMaker:
 
         Args:
             llm_output: LLM生成的文本
+            cite_key: 論文 cite_key。給定時卡片 ID 由 cite_key + 序號決定，
+                不採信 LLM 自報的 ID（模型會漂移成別篇論文的 citekey）。
 
         Returns:
             卡片數據列表
@@ -126,13 +130,69 @@ class ZettelMaker:
         for i in range(1, len(parts), 2):
             if i + 1 < len(parts):
                 card_id = parts[i].strip()
-                card_content = parts[i + 1].strip()
+                # 去掉卡片結尾的 === 分隔符，避免殘留在最後一個章節裡
+                card_content = re.sub(r'\n\s*===\s*$', '', parts[i + 1].strip()).strip()
 
                 card_data = self._parse_single_card(card_id, card_content)
                 if card_data:
                     cards.append(card_data)
 
+        if cite_key:
+            self.canonicalize_card_ids(cards, cite_key)
+
         return cards
+
+    _LINK_FIELDS = (
+        'foundation_links', 'derived_links', 'related_links', 'contrast_links'
+    )
+
+    def canonicalize_card_ids(self, cards: List[Dict[str, Any]], cite_key: str) -> List[Dict[str, Any]]:
+        """把 LLM 自報的卡片 ID 重編為 {cite_key}-{序號}，並同步改寫卡內連結。
+
+        LLM 的 ID 會漂移（補零消失、退化成別篇論文的 citekey），髒 ID 進了知識庫
+        就可能與真實 citekey 撞號，因此改由程式決定；對不上的連結視為幻覺，丟棄。
+
+        就地修改 cards 並回傳同一清單（供 grounding gate 過濾後重編存活卡片）。
+        """
+        id_map = {}
+        for index, card in enumerate(cards, start=1):
+            new_id = self.generate_card_id(cite_key, index)
+            id_map[card['id']] = new_id
+            card['id'] = new_id
+
+        for card in cards:
+            for field in self._LINK_FIELDS:
+                card[field] = [
+                    id_map[link] for link in card[field] if link in id_map
+                ]
+            for field in self._FREE_TEXT_FIELDS:
+                if card.get(field):
+                    card[field] = self._rewrite_inline_links(card[field], id_map)
+
+        return cards
+
+    # 自由文字欄位也可能含 [[...]]（模板要求 AI 註記至少帶一個連結）
+    _FREE_TEXT_FIELDS = (
+        'detailed_explanation', 'personal_notes', 'open_questions', 'source_context'
+    )
+
+    def _rewrite_inline_links(self, text: str, id_map: Dict[str, str]) -> str:
+        """改寫自由文字中的 [[卡片ID]]；對不上的退成純文字，避免筆記 App 死連結。
+
+        含 `|`（顯示文字）或 .pdf 的連結屬來源文獻連結，不動。
+        """
+        if not text:
+            return text
+
+        def replace(match):
+            target = match.group(1)
+            if '|' in target or target.endswith('.pdf'):
+                return match.group(0)
+            if target in id_map:
+                return f"[[{id_map[target]}]]"
+            return target
+
+        return re.sub(r'\[\[([^\]]+)\]\]', replace, text)
 
     def _parse_single_card(self, card_id: str, content: str) -> Optional[Dict[str, Any]]:
         """解析單張卡片內容"""
@@ -171,25 +231,9 @@ class ZettelMaker:
                 card['tags'] = [t.strip() for t in tags_str.split(',')]
 
             # 識別章節（在切換前先保存舊章節內容）
-            elif line_stripped in ['說明:', 'Explanation:', '說明：']:
+            elif (section := self._match_section_header(line_stripped)):
                 self._save_section_content(current_section, section_content, card)
-                current_section = 'explanation'
-                section_content = []
-            elif line_stripped in ['連結:', 'Links:', '連結：', '連結網絡:', '連結網絡：']:
-                self._save_section_content(current_section, section_content, card)
-                current_section = 'links'
-                section_content = []
-            elif line_stripped in ['來源脈絡:', 'Source Context:', '來源脈絡：']:
-                self._save_section_content(current_section, section_content, card)
-                current_section = 'source_context'
-                section_content = []
-            elif line_stripped in ['個人筆記:', 'Personal Notes:', '個人筆記：']:
-                self._save_section_content(current_section, section_content, card)
-                current_section = 'notes'
-                section_content = []
-            elif line_stripped in ['待解問題:', 'Open Questions:', '待解問題：']:
-                self._save_section_content(current_section, section_content, card)
-                current_section = 'questions'
+                current_section = section
                 section_content = []
 
             # 收集章節內容
@@ -203,6 +247,36 @@ class ZettelMaker:
         self._save_section_content(current_section, section_content, card)
 
         return card if card['title'] else None
+
+    # 章節關鍵詞（依序比對）。小模型常寫出錯字變體 —— 實測見過
+    # 「連結語系」「來源脈索」「個人筆目」—— 嚴格字串比對認不得就會讓整段
+    # 落進上一節，連結因此永遠進不了 links 欄位，故改以關鍵詞辨識。
+    _SECTION_KEYWORDS = (
+        ('links', ('連結', 'links')),
+        ('source_context', ('來源', 'source context')),
+        ('notes', ('個人', 'personal notes')),
+        ('questions', ('待解', 'open questions')),
+        ('explanation', ('說明', 'explanation')),
+    )
+    _HEADER_MAX_LEN = 20
+
+    def _match_section_header(self, line: str) -> Optional[str]:
+        """判斷此行是否為章節標頭，回傳章節名稱（非標頭則 None）。
+
+        條件：去掉 markdown 記號與結尾冒號後夠短，且含章節關鍵詞。
+        """
+        core = line.strip().lstrip('#*-　 ').strip()
+        if not core.endswith((':', '：')):
+            return None
+        core = core.rstrip(':：').strip().rstrip('*').strip()
+        if not core or len(core) > self._HEADER_MAX_LEN:
+            return None
+
+        lowered = core.lower()
+        for section, keywords in self._SECTION_KEYWORDS:
+            if any(keyword in lowered for keyword in keywords):
+                return section
+        return None
 
     def _save_section_content(self, section: Optional[str], content: List[str], card: Dict[str, Any]):
         """保存章節內容到卡片"""
@@ -398,27 +472,33 @@ class ZettelMaker:
         return sorted_cards
 
     def generate_zettelkasten(self,
-                             llm_output: str,
-                             output_dir: Path,
-                             paper_info: Dict[str, str]) -> Dict[str, Any]:
+                             llm_output: Optional[str] = None,
+                             output_dir: Path = None,
+                             paper_info: Dict[str, str] = None,
+                             cards: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """
         完整生成Zettelkasten卡片集
 
         Args:
-            llm_output: LLM生成的內容
+            llm_output: LLM生成的內容（未傳 cards 時用於解析）
             output_dir: 輸出目錄
             paper_info: 論文信息
+            cards: 已解析/過濾/編號的卡片清單。傳入時**跳過內部重新解析**，直接寫檔——
+                供 grounding gate 在 api 層過濾後，把存活卡片交給寫檔（見 api/zettel）。
 
         Returns:
             生成結果
         """
-        # 1. 解析卡片
-        cards = self.parse_llm_output(llm_output)
+        # 1. 取得卡片：優先用傳入的已處理清單（gate 過濾後），否則解析 llm_output
+        #    （cite_key 存在時由程式決定卡片 ID，見 canonicalize_card_ids）
+        if cards is None:
+            cards = self.parse_llm_output(llm_output or "", cite_key=paper_info.get('cite_key'))
 
         if not cards:
-            # 保存原始輸出用於調試
+            # 保存原始輸出用於調試（僅在有 llm_output 時）
             debug_file = output_dir.parent / f"debug_llm_output_{output_dir.name}.txt"
-            debug_file.write_text(llm_output, encoding='utf-8')
+            if llm_output:
+                debug_file.write_text(llm_output, encoding='utf-8')
             raise ValueError(f"無法解析任何卡片，請檢查LLM輸出格式。原始輸出已保存至: {debug_file}")
 
         # 2. 創建卡片目錄
