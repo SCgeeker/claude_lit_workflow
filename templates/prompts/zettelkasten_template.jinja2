@@ -4,7 +4,7 @@
 
 {% if pdf_content %}
 參考論文內容（請優先依據以下論文內容提取原子化概念）：
-{{ pdf_content | truncate(40000) }}
+{{ pdf_content }}
 
 {% endif %}
 {% if existing_related_cards and existing_related_cards|length > 0 %}

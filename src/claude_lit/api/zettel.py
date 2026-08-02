@@ -17,12 +17,12 @@ from claude_lit.generators.zettel_maker import ZettelMaker
 from .errors import LLMGenerationError, ProviderUnavailableError
 from .models import ZettelRequest, ZettelResult
 from .progress import ProgressCallback, ProgressEvent
-from .prompts import get_card_count, render_zettel_prompt, resolve_cite_key
+from .prompts import _ZETTEL_MAX_CHARS, get_card_count, render_zettel_prompt, resolve_cite_key
 from .sources import resolve_source
 
 logger = logging.getLogger("claude_lit_workflow.api.zettel")
 
-_ZETTEL_MAX_CHARS = 40000
+# 抽取上限見 api.prompts._ZETTEL_MAX_CHARS（單一真相，import 沿用）。
 # 每張卡片約 500-700 tokens；comprehensive(30張) 需 ~22000，上限 32000 防截斷
 _TOKENS_PER_CARD = 700
 _MAX_TOKENS_CAP = 32000
