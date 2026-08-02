@@ -5,12 +5,14 @@
 （入庫）→（向量嵌入）。知識庫與向量庫相依一律 lazy import。
 """
 
+import hashlib
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
+from claude_lit.checkers import grounding_checker as gc
 from claude_lit.generators import SlideMaker
 from claude_lit.generators.zettel_maker import ZettelMaker
 
@@ -26,6 +28,74 @@ logger = logging.getLogger("claude_lit_workflow.api.zettel")
 # 每張卡片約 500-700 tokens；comprehensive(30張) 需 ~22000，上限 32000 防截斷
 _TOKENS_PER_CARD = 700
 _MAX_TOKENS_CAP = 32000
+
+# grounding 門檻：來源短於此字元數視為不足以逐字比對，跳過 gate（避免 stub 誤刪全部）
+_MIN_GROUND_SOURCE_CHARS = 200
+_QUARANTINE_SUBDIR = "_needs_cjk_check"
+
+
+def _source_fingerprint(request: "ZettelRequest") -> dict:
+    """來源指紋（供 sidecar 偵測版本漂移）。PDF 才有 sha1；URL 記 url。"""
+    fp: dict = {"pdf_name": None, "sha1": None}
+    if request.pdf:
+        p = Path(request.pdf)
+        fp["pdf_name"] = p.name
+        try:
+            fp["sha1"] = hashlib.sha1(p.read_bytes()).hexdigest()
+        except Exception:  # 讀不到不阻斷 grounding
+            pass
+    elif request.url:
+        fp["url"] = request.url
+    return fp
+
+
+def _ground_cards(cards: List[dict], source_content: str) -> Tuple[List[dict], List[dict], dict]:
+    """對每張卡片判 grounding，三分為 (keep, quarantine, grounding_by_obj)；erase 直接丟棄。
+
+    keep 卡若核心與 raw span 僅差 normalize 雜訊，就地以「接合後單行」覆寫 core_summary
+    （去換行連字/塌陷空白），使寫入 description 為原文可逐字回溯的樣貌；sidecar 另存 raw span。
+    """
+    grounding_by_obj: dict = {}
+    kept: List[dict] = []
+    quarantined: List[dict] = []
+    for card in cards:
+        core = card.get("core_summary", "")
+        g = gc.ground_card(core, source_content)
+        grounding_by_obj[id(card)] = g
+        if g.disposition == "keep":
+            if g.matched_span and gc.same_text_up_to_spacing(core, g.matched_span):
+                card["core_summary"] = gc.normalize(g.matched_span)
+            kept.append(card)
+        elif g.disposition == "quarantine":
+            quarantined.append(card)
+        # erase：不落地
+    return kept, quarantined, grounding_by_obj
+
+
+def _assign_quarantine_ids(cards: List[dict], cite_key: str) -> None:
+    """隔離卡給獨立 ID 命名空間 {cite_key}-cjk-NNN，並清掉連結（與正常卡序脫鉤）。"""
+    for i, card in enumerate(cards, start=1):
+        card["id"] = f"{cite_key}-cjk-{i:03d}"
+        for field in ("foundation_links", "derived_links", "related_links", "contrast_links"):
+            if field in card:
+                card[field] = []
+
+
+def _write_grounding_sidecar(directory: Path, card: dict, grounding, fingerprint: dict) -> None:
+    """把單張卡片的 grounding 記錄寫成工具中立 sidecar {card_id}.grounding.json。"""
+    if grounding is None:
+        return
+    record = {
+        "card_id": card["id"],
+        "verdict": grounding.verdict,
+        "coverage": round(grounding.coverage, 4),
+        "matched_span": grounding.matched_span,
+        "char_offset": list(grounding.char_offset) if grounding.char_offset else None,
+        "source_fingerprint": fingerprint,
+    }
+    (directory / f"{card['id']}.grounding.json").write_text(
+        json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
 
 def _get_kb_manager():
@@ -226,14 +296,48 @@ def generate_zettel(
             hint="執行 uv run setup 檢查 LLM 供應商設定",
         ) from e
 
-    # 5. 解析
+    # 5. 解析（延後 canonicalize：先不編 ID，待 grounding 過濾後再對存活卡片編號）
     emit(ProgressEvent(stage="parse", message="正在解析卡片..."))
-    cards = zettel_maker.parse_llm_output(llm_output, cite_key=cite_key)
+    cards = zettel_maker.parse_llm_output(llm_output, cite_key=None)
     if not cards:
         raise LLMGenerationError(
             "無法解析任何卡片（LLM 輸出不含 ===CARD:=== 區塊）",
             hint="請更換模型或降低 detail 後重試",
         )
+
+    # 5.5 grounding gate（三分 KEEP / QUARANTINE / ERASE；erase 不落地）
+    total_parsed = len(cards)
+    quarantined: List[dict] = []
+    grounding_by_obj: dict = {}
+    grounded = erased = flagged = 0
+    if request.ground:
+        if source.content and len(source.content) >= _MIN_GROUND_SOURCE_CHARS:
+            cards, quarantined, grounding_by_obj = _ground_cards(cards, source.content)
+            erased = total_parsed - len(cards) - len(quarantined)
+            if not cards:
+                raise LLMGenerationError(
+                    "所有卡片均無法逐字回溯原文（grounding 全數抹除）",
+                    hint="來源抽取品質或模型可能不佳；可加 --no-ground 略過驗證後人工檢查",
+                )
+            zettel_maker.canonicalize_card_ids(cards, cite_key)
+            _assign_quarantine_ids(quarantined, cite_key)
+            grounded, flagged = len(cards), len(quarantined)
+            if erased:
+                warnings.append(f"grounding 抹除 {erased} 張無法逐字回溯原文的卡片")
+            if flagged:
+                warnings.append(
+                    f"{flagged} 張含中文且定位不到，已隔離至 {_QUARANTINE_SUBDIR}/ 待審"
+                )
+        else:
+            zettel_maker.canonicalize_card_ids(cards, cite_key)
+            grounded = len(cards)
+            warnings.append("來源內容不足，跳過 grounding 驗證")
+        emit(ProgressEvent(
+            stage="ground",
+            message=f"grounded {grounded}/{total_parsed}，erased {erased}，flagged {flagged}",
+        ))
+    else:
+        zettel_maker.canonicalize_card_ids(cards, cite_key)
 
     # 6. 輸出檔案
     emit(ProgressEvent(stage="write", message="正在寫入卡片檔案...", total=len(cards)))
@@ -245,8 +349,21 @@ def generate_zettel(
 
     paper_info = _build_paper_info(request, source, cite_key)
     result = zettel_maker.generate_zettelkasten(
-        llm_output=llm_output, output_dir=output_dir, paper_info=paper_info
+        cards=cards, output_dir=output_dir, paper_info=paper_info
     )
+
+    # 6.5 grounding sidecar + 隔離卡輸出
+    if grounding_by_obj:
+        cards_dir = Path(result["output_dir"]) / "zettel_cards"
+        fingerprint = _source_fingerprint(request)
+        for card in cards:
+            _write_grounding_sidecar(cards_dir, card, grounding_by_obj.get(id(card)), fingerprint)
+        if quarantined:
+            qdir = cards_dir / _QUARANTINE_SUBDIR
+            qdir.mkdir(parents=True, exist_ok=True)
+            for card in quarantined:
+                zettel_maker.create_card_file(card, qdir, paper_info)
+                _write_grounding_sidecar(qdir, card, grounding_by_obj.get(id(card)), fingerprint)
 
     # URL 來源：寫入 _source.json 標記（供匯入腳本偵測 --allow-missing-bib）
     if request.url:
@@ -279,5 +396,8 @@ def generate_zettel(
         kb_added=kb_added,
         kb_skipped=kb_skipped,
         embedded=embedded,
+        grounded=grounded,
+        erased=erased,
+        flagged=flagged,
         warnings=warnings,
     )

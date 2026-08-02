@@ -48,7 +48,10 @@ uv run slides --pdf paper.pdf                              # 從 PDF 生成投�
 uv run slides --url https://arxiv.org/abs/1234 --style teaching
 uv run zettel --pdf paper.pdf --detail comprehensive      # 生成原子卡片
 uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md   # 結合編修後投影片
+uv run zettel --pdf paper.pdf --no-ground                  # 關閉逐字回溯驗證（預設啟用）
 ```
+
+> **Grounding gate（預設啟用）**：每張卡片的「核心」須能逐字回溯原文，定位不到即**抹除**、中文定位不到則**隔離**至 `_needs_cjk_check/` 待審；旁存 `{card_id}.grounding.json` 記錄溯源。以 `--no-ground` 關閉。
 
 ## LLM 供應商
 

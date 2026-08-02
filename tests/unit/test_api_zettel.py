@@ -40,7 +40,8 @@ def fake_pdf(tmp_path, monkeypatch):
 
 class TestGenerateZettel:
     def test_generates_12_cards(self, mock_llm, fake_pdf, tmp_path, capsys):
-        req = ZettelRequest(pdf=fake_pdf, add_to_kb=False, output_dir=tmp_path / "out")
+        # 隔離寫入管線：關閉 grounding，避免 mock 來源（無逐字對應）觸發抹除
+        req = ZettelRequest(pdf=fake_pdf, add_to_kb=False, ground=False, output_dir=tmp_path / "out")
         result = generate_zettel(req)
 
         assert result.card_count == 12
@@ -122,7 +123,8 @@ class TestGenerateZettel:
         req = ZettelRequest(pdf=fake_pdf, add_to_kb=False, output_dir=tmp_path / "out")
         generate_zettel(req, progress=events.append)
         stages = [e.stage for e in events]
-        assert stages == ["extract", "prompt", "llm", "parse", "write"]
+        # grounding 預設啟用 → parse 與 write 之間有 ground 階段
+        assert stages == ["extract", "prompt", "llm", "parse", "ground", "write"]
 
     def test_kb_stats_reported(self, mock_llm, fake_pdf, tmp_path, monkeypatch):
         class FakeKB:

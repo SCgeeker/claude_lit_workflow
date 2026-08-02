@@ -150,6 +150,7 @@ async def generate_zettel(
     custom_requirements: Optional[str] = None,
     add_to_kb: bool = False,
     cross_link: bool = False,
+    ground: bool = True,
     output_dir: Optional[str] = None,
     provider: str = "auto",
     model: Optional[str] = None,
@@ -159,6 +160,8 @@ async def generate_zettel(
 
     detail 決定卡片數（standard=12、comprehensive=30+，見 list_options）。
     add_to_kb 預設 False（不寫入伺服器本機知識庫）。
+    ground 預設 True：驗證每張卡片的核心可逐字回溯原文，定位不到則抹除、
+    中文定位不到則隔離待審；設 False 可關閉。
     回傳卡片檔案路徑清單與 metadata；卡片內容可用 read_output 讀取。
     """
     request = ZettelRequest(
@@ -171,6 +174,7 @@ async def generate_zettel(
         custom_requirements=custom_requirements,
         add_to_kb=add_to_kb,
         cross_link=cross_link,
+        ground=ground,
         output_dir=output_dir,
         provider=provider,
         model=model,

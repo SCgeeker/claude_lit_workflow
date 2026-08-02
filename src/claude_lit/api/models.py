@@ -106,6 +106,7 @@ class ZettelRequest(BaseModel):
     force: bool = False
     cross_link: bool = False
     embed: bool = True
+    ground: bool = True  # 生成端 grounding gate：核心無法逐字回溯原文則抹除；CJK 定位不到則隔離
 
     provider: str = "auto"
     model: Optional[str] = None
@@ -135,6 +136,9 @@ class ZettelResult(BaseModel):
     kb_added: int = 0
     kb_skipped: int = 0
     embedded: int = 0
+    grounded: int = 0   # 通過 grounding 而寫入的正常卡片數
+    erased: int = 0     # grounding 定位不到而抹除的卡片數
+    flagged: int = 0    # CJK 不可驗證、隔離待審的卡片數
     warnings: List[str] = []
 
 

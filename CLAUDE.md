@@ -132,8 +132,23 @@ output/
         ├── zettel_index.md
         └── zettel_cards/
             ├── {citekey}-001.md
-            └── ...
+            ├── {citekey}-001.grounding.json   # grounding sidecar（provenance）
+            ├── ...
+            └── _needs_cjk_check/              # CJK 定位不到、隔離待審的卡片
+                ├── {citekey}-cjk-001.md
+                └── {citekey}-cjk-001.grounding.json
 ```
+
+### Grounding gate（P3，預設啟用）
+
+Zettel 生成在寫檔前驗證每張卡片的「核心」能否**逐字回溯**原文：
+
+- **定位到** → 保留，並以原文 span 修正空格/換行連字；旁存 `{card_id}.grounding.json`（verdict、coverage、char_offset、來源指紋）。
+- **定位不到** → **抹除**（不落地、不入庫）。
+- **中文定位不到**（CJK，多為 CID glyph 抽取失敗）→ **隔離**至 `_needs_cjk_check/` 待人工審，不 erase 也不混入正常卡。
+
+關閉：`uv run zettel ... --no-ground`；MCP `generate_zettel` 傳 `ground=false`。
+`ZettelResult` 回報 `grounded` / `erased` / `flagged`。normalize 規則須與 vault `quote_check.py` 逐字同步（跨 repo 無 CI 強制）。
 
 ---
 

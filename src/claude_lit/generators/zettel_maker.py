@@ -138,7 +138,7 @@ class ZettelMaker:
                     cards.append(card_data)
 
         if cite_key:
-            self._canonicalize_card_ids(cards, cite_key)
+            self.canonicalize_card_ids(cards, cite_key)
 
         return cards
 
@@ -146,11 +146,13 @@ class ZettelMaker:
         'foundation_links', 'derived_links', 'related_links', 'contrast_links'
     )
 
-    def _canonicalize_card_ids(self, cards: List[Dict[str, Any]], cite_key: str):
+    def canonicalize_card_ids(self, cards: List[Dict[str, Any]], cite_key: str) -> List[Dict[str, Any]]:
         """把 LLM 自報的卡片 ID 重編為 {cite_key}-{序號}，並同步改寫卡內連結。
 
         LLM 的 ID 會漂移（補零消失、退化成別篇論文的 citekey），髒 ID 進了知識庫
         就可能與真實 citekey 撞號，因此改由程式決定；對不上的連結視為幻覺，丟棄。
+
+        就地修改 cards 並回傳同一清單（供 grounding gate 過濾後重編存活卡片）。
         """
         id_map = {}
         for index, card in enumerate(cards, start=1):
@@ -166,6 +168,8 @@ class ZettelMaker:
             for field in self._FREE_TEXT_FIELDS:
                 if card.get(field):
                     card[field] = self._rewrite_inline_links(card[field], id_map)
+
+        return cards
 
     # 自由文字欄位也可能含 [[...]]（模板要求 AI 註記至少帶一個連結）
     _FREE_TEXT_FIELDS = (
@@ -468,27 +472,33 @@ class ZettelMaker:
         return sorted_cards
 
     def generate_zettelkasten(self,
-                             llm_output: str,
-                             output_dir: Path,
-                             paper_info: Dict[str, str]) -> Dict[str, Any]:
+                             llm_output: Optional[str] = None,
+                             output_dir: Path = None,
+                             paper_info: Dict[str, str] = None,
+                             cards: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """
         完整生成Zettelkasten卡片集
 
         Args:
-            llm_output: LLM生成的內容
+            llm_output: LLM生成的內容（未傳 cards 時用於解析）
             output_dir: 輸出目錄
             paper_info: 論文信息
+            cards: 已解析/過濾/編號的卡片清單。傳入時**跳過內部重新解析**，直接寫檔——
+                供 grounding gate 在 api 層過濾後，把存活卡片交給寫檔（見 api/zettel）。
 
         Returns:
             生成結果
         """
-        # 1. 解析卡片（cite_key 存在時由程式決定卡片 ID，見 _canonicalize_card_ids）
-        cards = self.parse_llm_output(llm_output, cite_key=paper_info.get('cite_key'))
+        # 1. 取得卡片：優先用傳入的已處理清單（gate 過濾後），否則解析 llm_output
+        #    （cite_key 存在時由程式決定卡片 ID，見 canonicalize_card_ids）
+        if cards is None:
+            cards = self.parse_llm_output(llm_output or "", cite_key=paper_info.get('cite_key'))
 
         if not cards:
-            # 保存原始輸出用於調試
+            # 保存原始輸出用於調試（僅在有 llm_output 時）
             debug_file = output_dir.parent / f"debug_llm_output_{output_dir.name}.txt"
-            debug_file.write_text(llm_output, encoding='utf-8')
+            if llm_output:
+                debug_file.write_text(llm_output, encoding='utf-8')
             raise ValueError(f"無法解析任何卡片，請檢查LLM輸出格式。原始輸出已保存至: {debug_file}")
 
         # 2. 創建卡片目錄

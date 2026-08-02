@@ -4,6 +4,8 @@
 不呼叫 LLM，直接餵入模擬輸出，可離線重複執行。
 """
 
+from pathlib import Path
+
 import pytest
 
 from claude_lit.generators.zettel_maker import ZettelMaker
@@ -210,3 +212,47 @@ class TestCardDelimiterStripped:
         for card in cards:
             assert not card["open_questions"].rstrip().endswith("===")
             assert "===" not in card["detailed_explanation"]
+
+
+# --- add-grounding-gate Phase 2：cards 參數 + 公開 canonicalize ---
+
+_PAPER_INFO = {"title": "T", "authors": "", "year": 2026, "cite_key": "Hart-2026"}
+
+
+class TestGenerateWithPreParsedCards:
+    def test_cards_param_skips_reparse(self, maker, tmp_path):
+        """傳入已解析卡片時直接使用，不重新解析 llm_output（gate 過濾後的清單才落地）"""
+        cards = maker.parse_llm_output(DRIFTED_OUTPUT, cite_key="Hart-2026")
+        kept = cards[:2]  # 模擬 gate 過濾掉第 3 張
+        result = maker.generate_zettelkasten(
+            llm_output="<<< 不該被重新解析 >>>",
+            output_dir=tmp_path / "out",
+            paper_info=_PAPER_INFO,
+            cards=kept,
+        )
+        assert result["card_count"] == 2
+        assert [Path(f).stem for f in result["card_files"]] == [
+            "Hart-2026-001",
+            "Hart-2026-002",
+        ]
+
+    def test_without_cards_param_still_parses(self, maker, tmp_path):
+        """未傳 cards 時維持舊路徑：解析 llm_output"""
+        result = maker.generate_zettelkasten(
+            llm_output=DRIFTED_OUTPUT,
+            output_dir=tmp_path / "out2",
+            paper_info=_PAPER_INFO,
+        )
+        assert result["card_count"] == 3
+
+
+class TestPublicCanonicalize:
+    def test_canonicalize_public(self, maker):
+        """canonicalize_card_ids 可公開呼叫，重編為 cite_key + 連續序號"""
+        cards = maker.parse_llm_output(DRIFTED_OUTPUT)  # 不帶 cite_key → 不 canonicalize
+        maker.canonicalize_card_ids(cards, "Foo-2025")
+        assert [c["id"] for c in cards] == [
+            "Foo-2025-001",
+            "Foo-2025-002",
+            "Foo-2025-003",
+        ]
