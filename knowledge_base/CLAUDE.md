@@ -49,10 +49,13 @@ cite_key: Author-Year
 ...
 ```
 
-## CLI 操作
+## CLI 操作（已暫停）
+
+> `uv run kb`（analyze / kb / embeddings）已歸檔停用，知識管理改由筆記 App 接管，
+> 見根目錄 `CLAUDE.md`「暫停功能」。以下指令暫不可用，保留供日後參考：
 
 ```bash
-uv run kb list           # 列出論文
-uv run kb search "query" # 搜索
-uv run kb stats          # 統計
+# uv run kb list           # 列出論文
+# uv run kb search "query" # 搜索
+# uv run kb stats          # 統計
 ```

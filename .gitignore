@@ -94,6 +94,7 @@ knowledge_base/index.db
 docs/*
 !docs/CLAUDE.md
 !docs/TROUBLESHOOTING.md
+!docs/LLM_BACKEND.md
 
 # examples/ 停用功能範例（analyze/kb/embeddings/batch/quality/向量搜索）移出 repo，本機保留
 examples/batch_processing/

@@ -142,4 +142,4 @@ MIT License — see [LICENSE](LICENSE). Copyright (c) 2025-2026 Sau-Chin Chen.
 
 ---
 
-**Version**: 0.12.0 ｜ **Updated**: 2026-07-09
+**Version**: 0.12.0 ｜ **Updated**: 2026-08-02

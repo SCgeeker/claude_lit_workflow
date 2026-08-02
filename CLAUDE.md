@@ -167,4 +167,4 @@ output/zettelkasten_notes/
 ---
 
 **版本**: 0.12.0
-**更新日期**: 2026-07-08（MCP server + 正規 package 化，SDD 流程見 openspec/）
+**更新日期**: 2026-08-02（文檔收斂至雙語 README + openspec；MCP server、正規 package 化見 openspec/）

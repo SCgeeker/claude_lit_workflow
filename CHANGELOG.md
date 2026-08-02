@@ -9,10 +9,14 @@
 
 ## [Unreleased]
 
-### 待完成
-- RelationFinder 數據格式修復（suggested_links.md 顯示問題）
-- Zettelkasten Prompt 改進（提升連結覆蓋率 11.6% → 50%+）
-- 連結筆記生成器（Phase 3）
+> 0.7.0–0.12.0 期間專案定位轉向：核心收斂為 **slides / zettel / setup / guide / mcp-server**，
+> 知識管理（analyze / kb / embeddings / 概念網絡）交由筆記 App 接管、已歸檔停用。
+> 這段期間的詳細變更以 git 歷史與 `openspec/`（specs 為行為真相來源）為準，未逐條回填本檔。
+
+### 近期（文檔收斂）
+- 公開文檔收斂至雙語 README（`README.md` / `README.en.md`）+ `openspec/`
+- `docs/`、`examples/` 收斂至現役工具，停用功能文檔與範例移出 repo
+- 新增 `docs/LLM_BACKEND.md`（Ollama 後端設定與品質觀察）
 
 ---
 

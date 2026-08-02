@@ -145,4 +145,4 @@ MIT License — 見 [LICENSE](LICENSE)。Copyright (c) 2025-2026 Sau-Chin Chen�
 
 ---
 
-**版本**：0.12.0 ｜ **更新**：2026-07-09
+**版本**：0.12.0 ｜ **更新**：2026-08-02
