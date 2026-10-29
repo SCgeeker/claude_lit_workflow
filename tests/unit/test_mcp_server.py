@@ -112,6 +112,53 @@ class TestGenerateTools:
         assert captured["req"].ground is False
 
     @pytest.mark.anyio
+    async def test_generate_zettel_media_passthrough(self, monkeypatch):
+        captured = {}
+
+        def fake(req, **kw):
+            captured["req"] = req
+            return _fake_zettel_result()
+
+        monkeypatch.setattr(server_mod, "api_generate_zettel", fake)
+        async with client_session(server_mod.mcp) as client:
+            result = await client.call_tool("generate_zettel", {
+                "text": "D:/talks/ep42.srt", "media_type": "podcast",
+                "source_meta": {"show": "科學新聞"}, "keep_fillers": True,
+            })
+            assert not result.isError
+        req = captured["req"]
+        assert req.media_type.value == "podcast"
+        assert req.text.name == "ep42.srt"
+        assert req.source_meta == {"show": "科學新聞"}
+        assert req.keep_fillers is True
+
+    @pytest.mark.anyio
+    async def test_generate_slides_chapter_passthrough(self, monkeypatch):
+        captured = {}
+
+        def fake(req, **kw):
+            captured["req"] = req
+            return _fake_slide_result()
+
+        monkeypatch.setattr(server_mod, "api_generate_slides", fake)
+        async with client_session(server_mod.mcp) as client:
+            result = await client.call_tool("generate_slides", {
+                "pdf": "D:/books/b.pdf", "media_type": "textbook", "chapter": "3-5",
+            })
+            assert not result.isError
+        assert captured["req"].media_type.value == "textbook"
+        assert captured["req"].chapter == "3-5"
+        assert captured["req"].source_meta == {}
+
+    @pytest.mark.anyio
+    async def test_chapter_on_wrong_media_is_error(self):
+        async with client_session(server_mod.mcp) as client:
+            result = await client.call_tool("generate_zettel", {
+                "text": "a.srt", "media_type": "lecture", "chapter": "3",
+            })
+            assert result.isError
+
+    @pytest.mark.anyio
     async def test_invalid_params_is_error(self):
         async with client_session(server_mod.mcp) as client:
             # pdf 與 url 互斥 → pydantic 驗證失敗 → isError
@@ -185,6 +232,9 @@ class TestSetupTools:
             assert len(sc["slide_styles"]) == 7
             assert len(sc["detail_levels"]) == 5
             assert len(sc["languages"]) == 3
+            assert set(sc["media_types"]) == {
+                "paper", "lecture", "podcast", "blog", "textbook", "monograph",
+            }
 
 
 class TestReadOutput:
@@ -220,6 +270,7 @@ class TestResources:
             "template://prompts/journal-club",
             "template://prompts/zettelkasten",
             "styles://academic-styles",
+            "styles://media-profiles",
             "config://custom-slides",
             "config://custom-zettel",
             "config://settings",

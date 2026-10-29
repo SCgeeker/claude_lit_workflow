@@ -10,6 +10,7 @@
 
 - **投影片生成** — 7 種學術風格、5 種詳細程度、3 種語言，輸出 Obsidian Slides / Marp 相容 Markdown 或 PPTX
 - **原子卡片生成** — Zettelkasten 原子化卡片，支援跨論文連結與知識庫整合
+- **多種媒體** — 除學術論文外，也處理講演／Podcast 逐字稿（.srt / .vtt / .txt）、網誌、教科書與主題專書（`--media`）
 - **使用嚮導** — 用自然語言描述需求，由指定 LLM 回覆建議的 CLI 指令
 - **MCP server** — 以 Model Context Protocol 曝露工具，任何支援 MCP 的 LLM 平台皆可呼叫（stdio + Streamable HTTP）
 - **多供應商** — Google Gemini / OpenAI / Anthropic / Ollama / NVIDIA NIM
@@ -76,7 +77,25 @@ uv run zettel --pdf paper.pdf --no-ground                  # 關閉逐字回溯�
 | `uv run guide "需求" --provider X` | 用指定 LLM 依"需求"回覆建議的 CLI 指令 |
 | `uv run slides --pdf paper.pdf` | 從 PDF 生成投影片 |
 | `uv run zettel --pdf paper.pdf` | 從 PDF 生成原子卡片 |
+| `uv run zettel --text ep42.srt --media podcast` | 從 Podcast 逐字稿生成卡片（觀點歸屬講者、sidecar 含時間戳） |
+| `uv run slides --pdf book.pdf --media textbook --chapter 3` | 以章為單位處理教科書／專書 |
 | `uv run mcp-server` | 啟動 MCP server（stdio；`--transport http` 為 Streamable HTTP） |
+
+### 媒體類型（`--media`）
+
+| 媒體 | 說明 | 來源 |
+|------|------|------|
+| `paper`（預設） | 學術論文，行為與過去完全相同 | `--pdf` / `--url` |
+| `lecture` | 講演逐字稿：依講演推進組織、保留口語原句 | `--text`（.srt / .vtt / .txt） |
+| `podcast` | 多人對談：每個觀點歸屬講者、分歧建成對比卡 | `--text` |
+| `blog` | 網誌：區分主張／證據／修辭，注意時效 | `--url` / `--text` |
+| `textbook` | 教科書：學習目標→概念→例題→自我檢測 | `--pdf` / `--text`（含 .epub）+ `--chapter` |
+| `monograph` | 主題專書：論證地圖、作者主張 vs 轉述他人 | 同上 |
+
+- `--meta KEY=VALUE`（可重複）填入來源資訊，用於標題頁與卡片來源連結，如 `--meta speaker=王小明 --meta year=2025`
+- `--chapter 3`／`3-5`：只處理指定章節，cite_key 自動加 `-ch03` 後綴（同書不同章不衝突）
+- 逐字稿會自動移除字幕序號與時間碼、填充詞（`--keep-fillers` 保留）、合併同講者段落並插入 `[hh:mm:ss]` 標記
+- 媒體行為定義於 `templates/styles/media_profiles.yaml`，可直接編輯（cwd 覆蓋機制適用）
 
 完整參數：執行 `uv run <指令> --help`，或 `uv run guide` 印出所有選項與風格清單；行為規格見 `openspec/`。
 
@@ -92,7 +111,7 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP（遠端平
 claude mcp add lit-workflow -- uv --directory /path/to/claude_lit_workflow run mcp-server
 ```
 
-提供 5 tools（generate_slides / generate_zettel / check_setup / list_options / read_output）、6 resources（模板、風格、自訂需求、脫敏設定）、2 prompts（渲染完成的提示詞）。生成由伺服器端 LLM 完成，API key 只存在伺服器行程、不經協定傳輸；長時生成會發 progress notification（建議 client timeout ≥ 360 秒）。
+提供 5 tools（generate_slides / generate_zettel / check_setup / list_options / read_output）、7 resources（模板、風格、媒體類型、自訂需求、脫敏設定）、2 prompts（渲染完成的提示詞）。生成由伺服器端 LLM 完成，API key 只存在伺服器行程、不經協定傳輸；長時生成會發 progress notification（建議 client timeout ≥ 360 秒）。
 
 ## 模板與設定（cwd 覆蓋機制）
 

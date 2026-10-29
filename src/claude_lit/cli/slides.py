@@ -28,6 +28,14 @@ from claude_lit.api import (
     list_options,
 )
 from claude_lit.api.progress import ProgressEvent
+from claude_lit.cli.media_args import (
+    add_media_arguments,
+    add_text_source_argument,
+    chapter_error,
+    default_slide_count,
+    parse_meta,
+    print_media_types,
+)
 from claude_lit.utils.prompt_loader import load_custom_requirements
 from claude_lit.utils.config_loader import load_env_file, get_ollama_url
 from claude_lit.utils.logger import logger
@@ -68,6 +76,7 @@ def print_available_options():
     print("\n🌐 可用的語言模式：")
     for key, desc in catalog.languages.items():
         print(f"   • {key:15s} - {desc}")
+    print_media_types(catalog.media_types)
     print()
 
 
@@ -120,6 +129,8 @@ def main():
 範例：
   uv run slides "深度學習應用" --style modern_academic --slides 15
   uv run slides --pdf paper.pdf --style modern_academic --detail comprehensive
+  uv run slides --text talk.srt --media lecture --meta speaker=王小明 --style teaching
+  uv run slides --pdf book.pdf --media textbook --chapter 3
   uv run slides "論文簡報" --from-kb 1 --style modern_academic
   uv run slides "深度學習" --pdf paper.pdf --format markdown
   uv run slides --list-options
@@ -129,6 +140,8 @@ def main():
     parser.add_argument('topic', nargs='?', help='簡報主題')
     parser.add_argument('--pdf', type=str, help='PDF文件路徑（可選）')
     parser.add_argument('--url', type=str, help='論文或網頁 URL（arXiv、DOI、出版商頁面或部落格）')
+    add_text_source_argument(parser)
+    add_media_arguments(parser)
     parser.add_argument('--analyze-first', action='store_true',
                        help='先分析PDF並加入知識庫，再從結構化內容生成投影片')
     parser.add_argument('--from-kb', type=int, metavar='PAPER_ID',
@@ -139,7 +152,8 @@ def main():
                        choices=DETAIL_CHOICES, help='詳細程度（預設：standard）')
     parser.add_argument('--language', type=str, default='chinese',
                        choices=LANGUAGE_CHOICES, help='語言模式（預設：chinese）')
-    parser.add_argument('--slides', type=int, default=15, help='投影片數量（預設：15）')
+    parser.add_argument('--slides', type=int, default=None,
+                       help='投影片數量（預設：論文 15；其他媒體依類型預設）')
     parser.add_argument('--output', type=str, help='輸出路徑（可選）')
     parser.add_argument('--format', type=str, default='markdown',
                        choices=['pptx', 'markdown', 'both'],
@@ -171,9 +185,9 @@ def main():
         return 0
 
     # 參數邏輯檢查（訊息與 exit code 與舊版一致）
-    if not args.topic and not args.from_kb and not args.pdf and not args.url:
+    if not args.topic and not args.from_kb and not args.pdf and not args.url and not args.text:
         parser.print_help()
-        print("\n❌ 錯誤：請提供簡報主題、--from-kb、--pdf 或 --url")
+        print("\n❌ 錯誤：請提供簡報主題、--from-kb、--pdf、--url 或 --text")
         print("💡 提示：使用 --list-options 查看所有可用選項")
         return 1
 
@@ -184,6 +198,18 @@ def main():
     if args.pdf and args.url:
         print("\n❌ 錯誤：--pdf 和 --url 不能同時使用")
         return 1
+
+    if args.text and (args.pdf or args.url or args.from_kb):
+        print("\n❌ 錯誤：--text 不能與 --pdf / --url / --from-kb 同時使用")
+        return 1
+
+    error = chapter_error(args.media, args.chapter)
+    if error:
+        print(f"\n❌ 錯誤：{error}")
+        return 1
+
+    source_meta = parse_meta(parser, args.meta)
+    slide_count = default_slide_count(args.media, args.slides)
 
     if args.analyze_first and not args.pdf:
         print("\n❌ 錯誤：--analyze-first 需要配合 --pdf 使用")
@@ -198,13 +224,17 @@ def main():
         topic_display = "（從知識庫論文標題）"
     elif args.pdf:
         topic_display = f"（從 PDF 推斷：{Path(args.pdf).stem}）"
+    elif args.text:
+        topic_display = f"（從文字檔推斷：{Path(args.text).stem}）"
     else:
         topic_display = "（未指定）"
     print(f"\n主題：{topic_display}")
+    if args.media != 'paper':
+        print(f"媒體類型：{args.media}" + (f"（第 {args.chapter} 章）" if args.chapter else ""))
     print(f"風格：{args.style}")
     print(f"詳細程度：{args.detail}")
     print(f"語言：{args.language}")
-    print(f"投影片數：{args.slides}")
+    print(f"投影片數：{slide_count}")
     print(f"LLM提供者：{args.llm_provider}")
     if args.llm_provider == 'auto':
         print(f"選擇策略：{args.selection_strategy}")
@@ -242,11 +272,16 @@ def main():
             pdf=pdf_arg,
             url=args.url,
             from_kb=args.from_kb,
+            text=args.text,
             content=content,
+            media_type=args.media,
+            source_meta=source_meta,
+            chapter=args.chapter,
+            keep_fillers=args.keep_fillers,
             style=args.style,
             detail=args.detail,
             language=args.language,
-            slide_count=args.slides,
+            slide_count=slide_count,
             output_format=args.format,
             output_path=args.output,
             provider=args.llm_provider,

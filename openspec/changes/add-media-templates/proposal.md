@@ -57,16 +57,14 @@
 
 - **新增**：`templates/styles/media_profiles.yaml`、`templates/prompts/media_slides_template.jinja2`、
   `templates/prompts/media_zettel_template.jinja2`（含套件內建版）、
-  `src/claude_lit/extractors/text_extractor.py`（txt/md/srt/vtt，epub 選配）、
-  `src/claude_lit/api/media.py`（profile 載入、metadata 與 citation 渲染）
+  `src/claude_lit/extractors/text_extractor.py`（txt/md/srt/vtt/epub）、`src/claude_lit/extractors/chapters.py`、
+  `src/claude_lit/api/media.py`（profile 載入、metadata 與 citation 渲染）、`src/claude_lit/cli/media_args.py`
 - **修改**：`api/models.py`（`MediaType` enum、`text` 來源、`source_meta`、`chapter`）、
   `api/sources.py`（text 來源與前處理）、`api/prompts.py`（依媒體選模板）、`api/zettel.py`（CJK 政策、
   timestamp sidecar）、`generators/slide_maker.py`（可注入替代模板）、`cli/`、`mcp_server/`、
   `tests/unit/test_resources.py`（`SYNCED_RESOURCES` 加入新檔）
-- **相依**：無必要新增；`.epub` 支援為選配 extra（`ebooklib`）
+- **相依**：無新增（`.epub` 以標準庫 `zipfile` / `xml.etree` / `html.parser` 抽取）
 - **相容性**：`media_type` 預設 `paper` → 既有指令、QuickAdd wrapper、MCP 呼叫行為完全不變
-- **草稿**：`drafts/templates/` 內含可渲染的 profile 與兩個模板草稿，已驗證
-  （1）五種媒體皆可渲染、（2）輸出協定標記完整、（3）`ZettelMaker.parse_llm_output` 正確解析 `claim` 卡、
-  （4）podcast 核心句以既有 `ground_card` 判定為 `EXACT`
+- **連帶修正**：grounding gate 以原文 span 改寫核心時不再套用 NFKC（原會把中文全形標點轉成半形）
 - **Non-Goals**：音訊/影片直接轉錄（ASR）——使用者自備逐字稿（YouTube 字幕、Whisper、Podcast 平台逐字稿）；
   全書自動 map-reduce 摘要（列為後續 change）；掃描版書籍 OCR

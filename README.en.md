@@ -10,6 +10,7 @@ A literature workflow toolkit for note-taking apps — turn a PDF, URL, or topic
 
 - **Slide generation** — 7 academic styles, 5 detail levels, 3 languages; outputs Obsidian Slides / Marp–compatible Markdown or PPTX
 - **Atomic card generation** — Zettelkasten cards with cross-paper links and knowledge-base integration
+- **Multiple media** — beyond research papers: lecture / podcast transcripts (.srt / .vtt / .txt), blog posts, textbooks and monographs (`--media`)
 - **Usage guide** — describe what you want in natural language; a chosen LLM replies with the exact CLI command
 - **MCP server** — exposes the tools over the Model Context Protocol; any MCP-capable LLM platform can call it (stdio + Streamable HTTP)
 - **Multi-provider** — Google Gemini / OpenAI / Anthropic / Ollama / NVIDIA NIM
@@ -73,7 +74,25 @@ Put any provider's API key in `.env`:
 | `uv run guide "request" --provider X` | Have a chosen LLM reply with the CLI command for your "request" |
 | `uv run slides --pdf paper.pdf` | Generate slides from a PDF |
 | `uv run zettel --pdf paper.pdf` | Generate atomic cards from a PDF |
+| `uv run zettel --text ep42.srt --media podcast` | Cards from a podcast transcript (views attributed to speakers; sidecar carries timestamps) |
+| `uv run slides --pdf book.pdf --media textbook --chapter 3` | Process a textbook / monograph one chapter at a time |
 | `uv run mcp-server` | Start the MCP server (stdio; `--transport http` for Streamable HTTP) |
+
+### Media types (`--media`)
+
+| Media | What changes | Sources |
+|-------|-------------|---------|
+| `paper` (default) | Research papers — behavior unchanged | `--pdf` / `--url` |
+| `lecture` | Talk transcripts: follow the talk's progression, keep spoken wording in quotes | `--text` (.srt / .vtt / .txt) |
+| `podcast` | Multi-speaker conversations: every view attributed to a speaker, disagreements become contrast cards | `--text` |
+| `blog` | Blog posts: separate claims / evidence / rhetoric, note datedness | `--url` / `--text` |
+| `textbook` | Textbooks: objectives → concepts → worked examples → self-test | `--pdf` / `--text` (incl. .epub) + `--chapter` |
+| `monograph` | Scholarly books: argument map, author's claims vs. views the author reports | same |
+
+- `--meta KEY=VALUE` (repeatable) supplies source info for the title slide and card source links, e.g. `--meta speaker="Jane Doe" --meta year=2025`
+- `--chapter 3` / `3-5` processes only those chapters; the cite_key gets a `-ch03` suffix so chapters of one book never collide
+- Transcripts are cleaned automatically: subtitle indices and timecodes removed, fillers dropped (`--keep-fillers` keeps them), same-speaker turns merged, `[hh:mm:ss]` markers inserted
+- Media behavior lives in `templates/styles/media_profiles.yaml` and can be edited directly (the cwd override applies)
 
 Full options: run `uv run <command> --help`, or `uv run guide` to print every option and style; behavior specs live in `openspec/`.
 
@@ -89,7 +108,7 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP (remote pla
 claude mcp add lit-workflow -- uv --directory /path/to/claude_lit_workflow run mcp-server
 ```
 
-Provides 5 tools (generate_slides / generate_zettel / check_setup / list_options / read_output), 6 resources (templates, styles, custom requirements, sanitized settings), and 2 prompts (fully rendered prompts). Generation runs on the server-side LLM; the API key stays in the server process and is never sent over the protocol. Long-running generation emits progress notifications (set client tool timeout ≥ 360s).
+Provides 5 tools (generate_slides / generate_zettel / check_setup / list_options / read_output), 7 resources (templates, styles, media types, custom requirements, sanitized settings), and 2 prompts (fully rendered prompts). Generation runs on the server-side LLM; the API key stays in the server process and is never sent over the protocol. Long-running generation emits progress notifications (set client tool timeout ≥ 360s).
 
 ## Templates & Config (cwd Override)
 

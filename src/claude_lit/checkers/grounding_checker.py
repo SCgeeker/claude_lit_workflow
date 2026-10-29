@@ -8,7 +8,9 @@ grounding-normalize-cross-repo）。
 
 verdict 分三種處置（disposition）：
 - keep       ：EXACT / EXACT_NOSPACE / DRIFTED_MINOR —— 正常輸出，擷刻 raw span
-- quarantine ：CJK_UNVERIFIABLE —— 含 Han 字但定位不到，隔離待審（不 erase）
+- quarantine ：CJK_UNVERIFIABLE —— 含 Han 字但定位不到，隔離待審（不 erase）；
+               僅在 cjk_policy="quarantine"（PDF 來源，可能是 CID glyph 抽取失敗）時適用，
+               文字來源以 cjk_policy="erase" 呼叫，中文定位不到與英文同樣抹除
 - erase      ：DRIFTED_MAJOR / NOT_FOUND / NO_DESC —— 不落地
 """
 
@@ -119,6 +121,17 @@ def normalize(text: str) -> str:
     return _normalize_indexed(text or "")[0]
 
 
+_LINE_HYPHEN = re.compile(r"-[ \t]*(?:\r\n|\r|\n)\s*")
+
+
+def join_span(text: str) -> str:
+    """原文 span 的「接合後單行」：只接合換行連字、塌陷空白，**不**做 NFKC 與引號正規化。
+
+    寫回卡片的核心須保留原文字元（如中文全形「，」），normalize() 只用於比對。
+    """
+    return " ".join(_LINE_HYPHEN.sub("", text or "").split())
+
+
 def _squash(text: str) -> str:
     """移除空白與各式連字號，供「僅差空格/連字」的比對。"""
     return _SQUASH_PAT.sub("", text)
@@ -179,8 +192,17 @@ def _best_window(qn: str, sn: str) -> Tuple[float, Optional[int], Optional[int]]
     return best
 
 
-def ground_card(core_summary: Optional[str], source_content: Optional[str]) -> Grounding:
-    """判定單張卡片核心相對原文的 grounding。"""
+def ground_card(
+    core_summary: Optional[str],
+    source_content: Optional[str],
+    cjk_policy: str = "quarantine",
+) -> Grounding:
+    """判定單張卡片核心相對原文的 grounding。
+
+    cjk_policy：含 Han 字且定位不到時的處置——"quarantine"（隔離待審）或 "erase"（抹除）。
+    """
+    if cjk_policy not in ("quarantine", "erase"):
+        raise ValueError(f"cjk_policy 必須為 quarantine 或 erase：{cjk_policy!r}")
     core = (core_summary or "").strip()
 
     # NO_DESC：空 / 佔位符 / 尾綴省略號（接 P9）
@@ -197,7 +219,7 @@ def ground_card(core_summary: Optional[str], source_content: Optional[str]) -> G
         return Grounding(NO_DESC, 0.0, None, None, "erase")
 
     sn, sidx = _normalize_indexed(source_content or "")
-    has_cjk = bool(_CJK_PAT.search(core))
+    has_cjk = cjk_policy == "quarantine" and bool(_CJK_PAT.search(core))
 
     if not sn:
         # 無可比對來源：CJK 走隔離，其餘視為 NOT_FOUND

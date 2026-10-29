@@ -1,0 +1,214 @@
+# 媒體類型設定檔（media profiles）—— 草稿
+#
+# 與 academic_styles.yaml 的「風格」正交：
+#   風格（style）決定語氣與受眾；媒體（media）決定來源的閱讀方式、結構骨架、
+#   卡片類型配比、位置/引用格式與前處理。
+#
+# media_type 未指定或為 paper 時，沿用既有 journal_club_template / zettelkasten_template（零回歸）。
+# 其他 media_type 改用 media_slides_template / media_zettel_template，
+# 兩者的「輸出協定」（===標題頁=== / ===投影片N=== / ===CARD: id===）與既有模板逐字相同，
+# 以確保 SlideMaker / ZettelMaker 解析器與 grounding gate 不需修改。
+#
+# grounding.cjk_policy：中文核心定位不到時的處置（erase 抹除 / quarantine 隔離待審）。
+# 來源本身優先決定：PDF 一律 quarantine（可能是 CID glyph 抽取失敗）、
+# 文字檔（txt/md/srt/vtt/epub）一律 erase（無抽取失真）；本欄只在 URL 來源時生效。
+
+card_type_catalog:
+  concept: "概念：定義、原理、理論構念"
+  method: "方法：研究方法、技術、操作程序"
+  finding: "發現：研究結果、數據、觀察"
+  question: "問題：待解問題、研究方向；教科書中可作自我檢測題"
+  claim: "主張：講者/作者明確提出、可被支持或反駁的論點"        # 新增
+  example: "例子：案例、類比、示範、例題（說明概念如何運作）"      # 新增
+
+media_types:
+  paper:
+    name: "學術論文"
+    name_en: "Research Paper"
+    description: "期刊/會議論文（既有預設行為）"
+    template: legacy            # 使用既有 journal_club_template / zettelkasten_template
+    accepted_inputs: [pdf, url]
+
+  lecture:
+    name: "講演逐字稿"
+    name_en: "Lecture / Talk Transcript"
+    description: "單一講者為主的演講、課堂、研討會報告逐字稿"
+    accepted_inputs: [txt, md, srt, vtt]
+    source_label: "講演逐字稿"
+    preprocess: [parse_subtitles, strip_fillers, merge_turns, insert_time_markers]
+    metadata_fields: [speaker, event, date, url]
+    reading_stance: |
+      這是口語轉寫的逐字稿，不是書面文章：
+      - 句子可能不完整、重複或自我修正；請依語意理解，但引用時保留原句
+      - 可能含語音辨識錯誤（同音字、專有名詞誤聽）；在「說明」中註明疑似正確寫法，不要改動引用原句
+      - 講者常以「鋪陳 → 主張 → 例子 → 回扣」推進；請辨識每段的論證角色
+      - `[00:12:30]` 形式的時間標記獨立成行，只供定位，不屬於講者原話
+    slide_structure:
+      - "講題與講者脈絡（為何講、對誰講）"
+      - "核心問題 / 講者想回答什麼"
+      - "主要論點（依講演順序，一張一論點）"
+      - "關鍵例子、類比或示範"
+      - "講者的結論與呼籲"
+      - "Q&A 重點（如逐字稿包含）"
+      - "批判性反思與延伸閱讀"
+    slide_rules: |
+      - 依講演的實際推進順序組織，不套用「研究背景／方法／結果」架構
+      - 每個主要論點盡量附上講者用來支撐它的例子或類比
+      - 可在重點後以（[時間標記]）註明出處段落，方便回看影片
+    card_type_weights: {concept: 35, claim: 30, example: 20, question: 15}
+    location_format: "最接近的時間標記與段落角色，如「[00:12:30] 主論點二」；無時間標記則寫「開場／中段／結尾／Q&A」"
+    citation_format: "[[{cite_key}|{speaker} ({year}) 講演]]"
+    core_rule: "從逐字稿逐字擷取講者原句（可連續兩句）；保留口語原貌與疑似誤聽字，但不要包含時間標記"
+    grounding:
+      cjk_policy: erase
+    recommended_styles: [teaching, modern_academic, case_analysis]
+    default_slide_count: 12
+
+  podcast:
+    name: "Podcast 逐字稿"
+    name_en: "Podcast / Interview Transcript"
+    description: "多講者對談、訪談、圓桌節目逐字稿"
+    accepted_inputs: [txt, md, srt, vtt]
+    source_label: "Podcast 逐字稿"
+    preprocess: [parse_subtitles, strip_fillers, merge_turns, insert_time_markers]
+    metadata_fields: [show, episode, hosts, guests, date, url]
+    reading_stance: |
+      這是多人對談的口語逐字稿：
+      - 以講者標籤（如「主持人：」「來賓 A：」）辨識發言者；**每個觀點都要歸屬到說話者**
+      - 區分主持人的提問/轉述與來賓的實際主張，不要把提問當成結論
+      - 留意講者之間的共識、分歧與未被回答的問題
+      - 對談常離題；只抽取與節目主題相關、有實質內容的段落
+      - 可能含語音辨識錯誤；在「說明」中註明，不要改動引用原句
+      - `[00:12:30]` 形式的時間標記獨立成行，只供定位
+    slide_structure:
+      - "節目、集數與來賓背景"
+      - "本集核心議題"
+      - "各講者的主要觀點（一張一位講者或一個議題）"
+      - "共識與分歧"
+      - "印象深刻的例子或故事"
+      - "未解問題與延伸思考"
+    slide_rules: |
+      - 每個重點都以「誰說的」開頭或結尾標註（如：—— 來賓 A）
+      - 分歧處並列雙方觀點，不替任一方下結論
+      - 閒聊、廣告、片頭片尾不納入
+    card_type_weights: {claim: 40, concept: 25, example: 20, question: 15}
+    location_format: "講者與最接近的時間標記，如「來賓 A，[00:41:05]」"
+    citation_format: "[[{cite_key}|{show} {episode} ({year})]]"
+    core_rule: "從逐字稿逐字擷取單一講者的原句（不可跨講者拼接）；保留口語原貌，不包含講者標籤與時間標記"
+    extra_card_rules: |
+      - 「說明」第一句必須點明此觀點出自哪位講者
+      - 兩位講者對同一議題意見相左時，各出一張 claim 卡並以「對比」互相連結
+    grounding:
+      cjk_policy: erase
+    recommended_styles: [modern_academic, case_analysis, teaching]
+    default_slide_count: 10
+
+  blog:
+    name: "網誌文章"
+    name_en: "Blog Post / Essay"
+    description: "個人網誌、專欄、電子報、技術部落格"
+    accepted_inputs: [url, md, txt, pdf]
+    source_label: "網誌文章"
+    preprocess: [strip_boilerplate]
+    metadata_fields: [author, site, date, url]
+    reading_stance: |
+      這是一般網誌／評論文章，不是同儕審查的論文：
+      - 區分作者的**主張**、**支持證據**（數據、引用、親身經驗）與**修辭**
+      - 留意發文日期與時效性；技術或時事內容可能已過時
+      - 作者引用的外部連結僅記錄，不代替原文內容
+    slide_structure:
+      - "文章背景（作者、發表處、日期、寫作動機）"
+      - "核心論點"
+      - "支持論據與證據類型"
+      - "實際意涵或可行建議"
+      - "批判性反思（證據強度、立場、時效）"
+    slide_rules: |
+      - 無需強求「研究方法」或「統計結果」架構
+      - 每個論據標註其證據類型（數據／引述／經驗／推論）
+    card_type_weights: {claim: 40, concept: 30, example: 15, question: 15}
+    location_format: "文章小標題或段落位置，如「〈為什麼 X 會失敗〉第 2 段」"
+    citation_format: "[[{cite_key}|{author} ({year}) {site}]]"
+    core_rule: "從文章逐字擷取最能代表此論點的一句話，保持原文語言"
+    grounding:
+      cjk_policy: erase
+    recommended_styles: [modern_academic, case_analysis, literature_review]
+    default_slide_count: 8
+
+  textbook:
+    name: "教科書"
+    name_en: "Textbook Chapter"
+    description: "教科書、講義、教材的單一章節（全書請以章為單位分次處理）"
+    accepted_inputs: [pdf, epub, md, txt]
+    source_label: "教科書章節"
+    preprocess: [chapter_split, strip_running_heads]
+    chunking: chapter          # 以章為單位：一章一次生成
+    metadata_fields: [authors, title, edition, chapter, pages]
+    reading_stance: |
+      這是教學用的教科書章節：
+      - 章節通常有「學習目標 → 先備知識 → 定義 → 原理 → 例題 → 摘要 → 習題」結構
+      - 定義句、粗體術語、方框重點是最重要的抽取對象
+      - 例題與圖表說明概念如何應用；習題可轉成自我檢測問題
+      - 教科書呈現的是學界共識，少有作者個人主張；不要把定義誤標為 claim
+    slide_structure:
+      - "本章學習目標"
+      - "先備知識回顧"
+      - "核心概念與定義（一張一概念，由淺入深）"
+      - "原理或模型說明"
+      - "例題 / 應用示範"
+      - "常見迷思與易混淆概念"
+      - "本章小結"
+      - "自我檢測題（3–5 題，不附答案或附簡答）"
+    slide_rules: |
+      - 依章節原有的教學順序，不重排成論文架構
+      - 概念頁先給定義，再給直觀解釋，最後給例子
+      - 自我檢測題須能由本章內容回答
+    card_type_weights: {concept: 45, method: 15, example: 25, question: 15}
+    location_format: "章節與頁碼，如「第 3 章 3.2 節，p.58」"
+    citation_format: "[[{cite_key}|{authors} ({year}) 第{chapter}章]]"
+    core_rule: "從教科書逐字擷取定義句或關鍵敘述，保持原文語言；不要擷取習題題幹"
+    extra_card_rules: |
+      - concept 卡的「說明」依序寫：定義 → 直觀解釋 → 與相鄰概念的區別
+      - question 卡寫成可自我檢測的問題，「待解問題」欄放提示而非完整答案
+      - 優先建立「基於」連結，反映教科書的先備知識順序
+    grounding:
+      cjk_policy: quarantine
+    recommended_styles: [teaching, classic_academic]
+    default_slide_count: 15
+
+  monograph:
+    name: "主題專書"
+    name_en: "Scholarly Monograph"
+    description: "學術專書、通論書、論證型非虛構作品（以章或全書導論為單位）"
+    accepted_inputs: [pdf, epub, md, txt]
+    source_label: "專書章節"
+    preprocess: [chapter_split, strip_running_heads]
+    chunking: chapter
+    metadata_fields: [authors, title, publisher, year, chapter, pages]
+    reading_stance: |
+      這是以論證為主體的專書：
+      - 全書有一個核心命題（thesis），各章為其分論證；請辨識本章在全書論證中的位置
+      - 區分作者自己的主張、作者轉述的他人觀點、以及作者反駁的對象
+      - 留意作者使用的證據類型（史料、個案、實驗、思想實驗、二手文獻）
+      - 作者常自創或重新界定術語；以作者本人的定義為準
+    slide_structure:
+      - "書籍與作者脈絡（學術位置、寫作動機）"
+      - "全書核心命題 / 本章在論證中的角色"
+      - "本章論證地圖（前提 → 推論 → 結論）"
+      - "關鍵概念（作者自創或重新定義的術語）"
+      - "主要證據與案例"
+      - "作者的理論對話者（支持／反駁的學者）"
+      - "評論：論證強度、盲點、可延伸之處"
+    slide_rules: |
+      - 明確標示「作者主張」與「作者轉述的他人觀點」
+      - 論證地圖頁以步驟順序呈現，每步一個重點
+    card_type_weights: {claim: 35, concept: 35, example: 15, question: 15}
+    location_format: "章節與頁碼，如「第 4 章〈標題〉，pp.112–115」"
+    citation_format: "[[{cite_key}|{authors} ({year}) 第{chapter}章]]"
+    core_rule: "從原書逐字擷取作者本人的論述句（不要擷取作者引述他人的句子當作作者主張），保持原文語言"
+    extra_card_rules: |
+      - claim 卡的「說明」須寫出此主張的前提與證據
+      - 作者引述他人觀點時，「說明」須點明觀點的原主人與作者的態度（支持／反駁／修正）
+    grounding:
+      cjk_policy: quarantine
+    recommended_styles: [classic_academic, literature_review, modern_academic]
+    default_slide_count: 12

@@ -4,7 +4,8 @@
 
 # 工具總覽
 
-Claude Lit Workflow 從 PDF / URL / 主題生成學術投影片與 Zettelkasten 原子卡片，輸出純 Markdown。
+Claude Lit Workflow 從 PDF / URL / 文字檔 / 主題生成投影片與 Zettelkasten 原子卡片，輸出純 Markdown。
+除了學術論文，也能處理講演與 podcast 逐字稿、網誌、教科書與主題專書（`--media`）。
 
 ## uv run slides — 投影片生成
 
@@ -12,7 +13,8 @@ Claude Lit Workflow 從 PDF / URL / 主題生成學術投影片與 Zettelkasten 
     uv run slides --pdf paper.pdf --style modern_academic --detail comprehensive
 
 主要選項：
-- 內容來源（擇一）：`--pdf <檔案>`、`--url <網址>`、`--from-kb <論文ID>`，或直接給主題
+- 內容來源（擇一）：`--pdf <檔案>`、`--url <網址>`、`--text <逐字稿或文章>`、`--from-kb <論文ID>`，或直接給主題
+- `--media`：來源媒體類型，可選 {{ media_keys }}（預設 paper；與 `--style` 可並用）
 - `--style`：學術風格，可選 {{ slide_styles_keys }}
 - `--detail`：詳細程度，可選 {{ detail_keys }}
 - `--language`：語言，可選 {{ language_keys }}
@@ -27,11 +29,19 @@ Claude Lit Workflow 從 PDF / URL / 主題生成學術投影片與 Zettelkasten 
     uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
 
 主要選項：
-- 內容來源（擇一，必填其一）：`--pdf`、`--url`、`--from-kb`
+- 內容來源（擇一，必填其一）：`--pdf`、`--url`、`--text`、`--from-kb`
+- `--media` 同上；決定卡片類型（逐字稿與專書多 `claim` 主張卡、教科書多 `example` 例題卡）與引用格式
 - `--detail`（決定卡片數：standard≈12、comprehensive≈30+）、`--language`、`--domain <領域>`
 - `--citekey <鍵>` 手動指定引用鍵（Zotero bib 場景）
 - `--slides-file <檔案>` 以編修後的投影片為參考、`--no-add-to-kb`、`--cross-link`
 - `--llm-provider`、`--model` 同上
+
+## 媒體類型的共用選項（slides 與 zettel 皆適用）
+
+- `--text <檔案>` 支援 .txt / .md / .srt / .vtt / .epub；.srt / .vtt 會自動去除時間碼與序號、合併講者段落
+- `--meta KEY=VALUE`（可重複）提供來源資訊，如 `--meta speaker=王小明 --meta year=2025`、`--meta show=科學新聞 --meta episode=EP42`
+- `--chapter 3` 或 `--chapter 3-5`：教科書／專書以章為單位處理（僅 `--media textbook|monograph`）
+- `--keep-fillers` 保留逐字稿中的「嗯、呃、um、uh」（預設移除）
 
 ## 供應商與 NVIDIA 任務分流
 
@@ -49,7 +59,12 @@ Claude Lit Workflow 從 PDF / URL / 主題生成學術投影片與 Zettelkasten 
 ## 語言（--language）
 {{ language_block }}
 
+## 媒體類型（--media）
+{{ media_block }}
+
 # 範例
 
 - 「把 paper.pdf 做成教學風格、詳細一點的投影片」→ `uv run slides --pdf paper.pdf --style teaching --detail detailed`
+- 「把這集 podcast 的逐字稿 ep42.srt 做成卡片」→ `uv run zettel --text ep42.srt --media podcast --meta show=<節目名稱> --meta episode=EP42`
+- 「整理教科書 book.pdf 第 3 章的教學投影片」→ `uv run slides --pdf book.pdf --media textbook --chapter 3 --style teaching`
 - 「用 NVIDIA 大模型從這篇 PDF 生成完整的原子卡片並建立跨論文連結」→ `uv run zettel --pdf paper.pdf --detail comprehensive --cross-link --llm-provider nvidia`

@@ -133,8 +133,21 @@ LLM 輸出協定是解析器、grounding gate、Markdown 輸出模板、vault �
 並非所有組合都合理（如 `clinical` × `podcast`）。不做硬性禁止，而以 profile 的 `recommended_styles`
 作為 guide / Web UI 的預設與提示；使用者明確指定時照做。
 
-## 9. 開放問題
+## 9. 實作決定（與草案的差異）
+
+- **EPUB 不需額外依賴**：以 `zipfile` + `xml.etree` + `html.parser` 依 OPF spine 順序抽取，不引入 `ebooklib`。
+- **章節偵測不用 PDF 書籤**：統一以章標題列判定（PDF / EPUB / 文字檔共用）。規則：
+  中文「第 X 章」後須接空白／標點／行尾，英文「Chapter N」後須接行尾／標點／大寫——排除「第三章討論了…」「Chapter 3 shows…」等內文引用；
+  同章號取「其後內容 ≥500 字元、且位於前一章之後」的最早一處——排除目錄項目（彼此緊鄰）與目錄最後一項（常接長篇序言）。
+- **書眉移除不刪章標題**：重複 ≥3 次的短列視為書眉，但符合章標題格式者保留。
+- **CJK 政策以來源為準**：文字檔一律 erase、PDF 一律 quarantine；profile 的 `grounding.cjk_policy` 只在 URL 來源時生效。
+- **改寫核心不再 NFKC**：grounding gate 的「安全自動修正」原以 `normalize()` 結果覆寫核心，會把中文全形標點轉成半形；
+  改用 `join_span()`（只接合換行連字、塌陷空白）。比對仍用 `normalize()`，verdict 不受影響。
+- **字幕片段接合**：任一側為中日文字或全形標點時不加空白（「預測，而不是」），否則加一個空白。
+- **未指定 `--slides`**：論文 15 張，其他媒體用 profile 的 `default_slide_count`（CLI 層決定；API 預設維持 15）。
+
+## 10. 開放問題
 
 - `strip_fillers` 白名單是否需依語言分開（中文「就是」「然後」常有實義，預設不移除）。
-- 是否在 vault 端 `quote_check.py` 同步 `cjk_policy` 的來源區分（跨 repo，僅記錄義務）。
-- EPUB 抽取是否納入預設依賴，或維持選配 extra。
+- 是否在 vault 端 `quote_check.py` 同步 `cjk_policy` 的來源區分與 `join_span` 行為（跨 repo，僅記錄義務）。
+- 文字檔來源是否也寫 `_source.json` 標記（目前只有 URL 來源寫；匯入腳本對缺 bib 的判斷待確認）。

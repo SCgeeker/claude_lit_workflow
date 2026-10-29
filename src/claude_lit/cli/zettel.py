@@ -22,6 +22,13 @@ except Exception:
 
 from claude_lit.api import LitWorkflowError, ZettelRequest, generate_zettel, list_options
 from claude_lit.api.progress import ProgressEvent
+from claude_lit.cli.media_args import (
+    add_media_arguments,
+    add_text_source_argument,
+    chapter_error,
+    parse_meta,
+    print_media_types,
+)
 from claude_lit.utils.config_loader import load_env_file
 
 DETAIL_CHOICES = ['minimal', 'brief', 'standard', 'detailed', 'comprehensive']
@@ -33,6 +40,7 @@ _STAGE_ICONS = {
     'prompt': '📋',
     'llm': '🤖',
     'parse': '📊',
+    'ground': '🔎',
     'write': '💾',
     'kb': '📥',
     'embed': '📊',
@@ -95,6 +103,8 @@ def main():
   uv run zettel --pdf paper.pdf --no-add-to-kb
   uv run zettel --from-kb 1 --force
   uv run zettel --pdf paper.pdf --cross-link
+  uv run zettel --text ep42.srt --media podcast --meta show=科學新聞 --meta episode=EP42
+  uv run zettel --pdf book.pdf --media textbook --chapter 3 --citekey Smith-2020
         """
     )
 
@@ -105,6 +115,8 @@ def main():
                               help='論文或網頁 URL（arXiv、DOI、出版商頁面或部落格）')
     source_group.add_argument('--from-kb', type=int, metavar='PAPER_ID',
                               help='從知識庫中的論文 ID 生成')
+    add_text_source_argument(source_group)
+    add_media_arguments(parser)
 
     parser.add_argument('--detail', type=str, default='standard',
                         choices=DETAIL_CHOICES, help='詳細程度（預設：standard）')
@@ -147,8 +159,16 @@ def main():
         print("\n🌐 可用的語言模式：")
         for key, desc in catalog.languages.items():
             print(f"   • {key:15s} - {desc}")
+        print_media_types(catalog.media_types)
         print()
         return 0
+
+    error = chapter_error(args.media, args.chapter)
+    if error:
+        print(f"\n❌ 錯誤：{error}")
+        return 1
+
+    source_meta = parse_meta(parser, args.meta)
 
     print("=" * 70)
     print("🗂️  Zettelkasten 卡片生成工具")
@@ -163,6 +183,8 @@ def main():
         )
     slides_content = load_slides_content(args.slides_file)
 
+    if args.media != 'paper':
+        print(f"\n媒體類型：{args.media}" + (f"（第 {args.chapter} 章）" if args.chapter else ""))
     print(f"\n詳細程度：{args.detail}")
     print(f"語言：{args.language}")
     print(f"領域：{args.domain}")
@@ -184,6 +206,11 @@ def main():
             pdf=args.pdf,
             url=args.url,
             from_kb=args.from_kb,
+            text=args.text,
+            media_type=args.media,
+            source_meta=source_meta,
+            chapter=args.chapter,
+            keep_fillers=args.keep_fillers,
             detail=args.detail,
             language=args.language,
             domain=args.domain,

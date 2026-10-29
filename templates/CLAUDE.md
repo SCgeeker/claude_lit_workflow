@@ -14,7 +14,7 @@
 ```
 templates/
 ├── prompts/    # LLM Prompt 模板
-└── styles/     # 學術風格定義
+└── styles/     # 學術風格定義、媒體類型定義
 ```
 
 ## Prompt 模板
@@ -31,7 +31,31 @@ Zettelkasten 卡片生成 Prompt
 - `language` - 語言
 
 ### prompts/journal_club_template.jinja2
-投影片生成 Prompt
+投影片生成 Prompt（`--media paper`，預設）
+
+### prompts/media_slides_template.jinja2 / media_zettel_template.jinja2
+非論文媒體（lecture / podcast / blog / textbook / monograph）的投影片與卡片 Prompt。
+內容由 `styles/media_profiles.yaml` 注入（變數 `media`、`source_meta`、`citation`、`card_type_catalog`）。
+
+**輸出協定不可改**：`===標題頁===`、`===投影片N===`、`===CARD: id===` 與各欄位標籤必須與論文模板一致，
+`tests/unit/test_media_templates.py` 會斷言兩邊協定相同——解析器、grounding gate、匯入腳本都依賴它。
+
+## 媒體類型
+
+### styles/media_profiles.yaml
+
+每種媒體一段 profile（與風格正交，可並用）：
+
+| 欄位 | 用途 |
+|------|------|
+| `reading_stance` | 這類來源的閱讀方式與陷阱 |
+| `slide_structure` / `slide_rules` | 建議簡報骨架與特有規則 |
+| `card_type_weights` | 可用卡片類型與配比（鍵須在 `card_type_catalog` 中） |
+| `core_rule` / `location_format` / `extra_card_rules` | 核心擷取、位置欄、卡片特有規則 |
+| `citation_format` | 卡片來源連結，`{speaker}` 等由 `--meta` 填入；**必須含 `|`** |
+| `preprocess` | 前處理步驟（`parse_subtitles`、`strip_fillers`、`merge_turns`、`insert_time_markers`、`strip_running_heads`、`chapter_split`） |
+| `grounding.cjk_policy` | 只對 URL 來源生效（PDF 一律隔離、文字檔一律抹除） |
+| `default_slide_count` / `recommended_styles` | 未指定 `--slides` 時的張數、guide 建議 |
 
 ## 學術風格
 

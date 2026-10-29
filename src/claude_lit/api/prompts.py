@@ -16,6 +16,7 @@ from jinja2 import Template
 from claude_lit.generators import SlideMaker
 from claude_lit.resource_loader import resolve_resource
 
+from . import media as media_api
 from .errors import CiteKeyMissingError
 from .models import SlideRequest, ZettelRequest
 from .sources import SourceContent, resolve_source
@@ -38,12 +39,44 @@ def get_card_count(detail: str) -> int:
     return config["styles"]["zettelkasten"]["default_card_count"].get(detail, 12)
 
 
+def source_kwargs(request, max_chars: int) -> dict:
+    """Slide/ZettelRequest → resolve_source 參數（slides 與 zettel、prompt 與生成共用）
+
+    呼叫端各自呼叫自己模組匯入的 resolve_source（測試以模組屬性替換來源）。
+    """
+    return dict(
+        topic=getattr(request, "topic", None),
+        pdf=request.pdf,
+        url=request.url,
+        from_kb=request.from_kb,
+        text=request.text,
+        content=getattr(request, "content", None),
+        max_chars=max_chars,
+        media_type=request.media_type.value,
+        chapter=request.chapter,
+        keep_fillers=request.keep_fillers,
+    )
+
+
+def _source_meta(request) -> dict:
+    """使用者 metadata；指定章節時自動補上 chapter（供引用格式的 {chapter}）"""
+    meta = dict(request.source_meta)
+    if request.chapter and not meta.get("chapter"):
+        meta["chapter"] = request.chapter
+    return meta
+
+
 def resolve_cite_key(request: ZettelRequest, source: SourceContent) -> str:
-    """解析 cite_key：明確傳入 > 知識庫論文 > URL slug > PDF 檔名。
+    """解析 cite_key：明確傳入 > 知識庫論文 > URL slug > PDF / 文字檔檔名；
+    指定章節時加 -chNN 後綴（同書不同章的卡片 ID 不衝突）。
 
     Raises:
         CiteKeyMissingError: from_kb 論文缺 cite_key 時
     """
+    return _resolve_base_cite_key(request, source) + media_api.chapter_suffix(request.chapter)
+
+
+def _resolve_base_cite_key(request: ZettelRequest, source: SourceContent) -> str:
     if request.cite_key and request.cite_key.strip():
         return request.cite_key.strip()
 
@@ -67,19 +100,28 @@ def resolve_cite_key(request: ZettelRequest, source: SourceContent) -> str:
     if request.pdf:
         return Path(request.pdf).stem
 
+    if request.text:
+        return Path(request.text).stem
+
     raise CiteKeyMissingError("無法解析 cite_key", hint="請以 --citekey 手動指定")
 
 
+def slides_template_options(request: SlideRequest) -> dict:
+    """paper → {}（既有 journal_club_template）；其他媒體 → 媒體模板路徑與 profile 變數"""
+    media_type = request.media_type.value
+    if media_api.is_legacy(media_type):
+        return {}
+    return {
+        "template_path": resolve_resource(media_api.MEDIA_SLIDES_TEMPLATE),
+        "extra_context": media_api.build_media_context(
+            media_type, source_meta=_source_meta(request)
+        ),
+    }
+
+
 def render_slides_prompt(request: SlideRequest) -> str:
-    """渲染投影片生成提示詞（journal_club_template.jinja2）"""
-    source = resolve_source(
-        topic=request.topic,
-        pdf=request.pdf,
-        url=request.url,
-        from_kb=request.from_kb,
-        content=request.content,
-        max_chars=_SLIDES_MAX_CHARS,
-    )
+    """渲染投影片生成提示詞（paper：journal_club_template；其他：media_slides_template）"""
+    source = resolve_source(**source_kwargs(request, _SLIDES_MAX_CHARS))
     maker = SlideMaker(llm_provider=request.provider)
     return maker.generate_prompt(
         topic=source.topic or "簡報",
@@ -90,6 +132,18 @@ def render_slides_prompt(request: SlideRequest) -> str:
         pdf_content=source.content,
         source_type=source.source_type,
         custom_requirements=request.custom_requirements,
+        **slides_template_options(request),
+    )
+
+
+def zettel_citation(request: ZettelRequest, source: SourceContent, cite_key: str) -> Optional[str]:
+    """媒體來源的卡片來源連結（paper 回傳 None，沿用既有格式）"""
+    media_type = request.media_type.value
+    if media_api.is_legacy(media_type):
+        return None
+    profile = media_api.get_media_profile(media_type)
+    return media_api.render_citation(
+        profile, cite_key, _source_meta(request), fallback=source.topic
     )
 
 
@@ -100,24 +154,28 @@ def render_zettel_prompt(
     cite_key: Optional[str] = None,
     related_cards: Optional[List[dict]] = None,
 ) -> str:
-    """渲染 Zettel 卡片生成提示詞（zettelkasten_template.jinja2）
+    """渲染 Zettel 卡片生成提示詞（paper：zettelkasten_template；其他：media_zettel_template）
 
     source / cite_key / related_cards 可由呼叫端（generate_zettel）傳入以避免重複解析。
     """
     if source is None:
-        source = resolve_source(
-            pdf=request.pdf,
-            url=request.url,
-            from_kb=request.from_kb,
-            max_chars=_ZETTEL_MAX_CHARS,
-        )
+        source = resolve_source(**source_kwargs(request, _ZETTEL_MAX_CHARS))
     if cite_key is None:
         cite_key = resolve_cite_key(request, source)
 
-    template_path = resolve_resource("templates/prompts/zettelkasten_template.jinja2")
+    media_type = request.media_type.value
+    extra_context: dict = {}
+    if media_api.is_legacy(media_type):
+        template_path = resolve_resource("templates/prompts/zettelkasten_template.jinja2")
+    else:
+        template_path = resolve_resource(media_api.MEDIA_ZETTEL_TEMPLATE)
+        extra_context = media_api.build_media_context(
+            media_type, cite_key=cite_key, source_meta=_source_meta(request), topic=source.topic
+        )
     template = Template(template_path.read_text(encoding="utf-8"))
 
     return template.render(
+        **extra_context,
         topic=source.topic,
         pdf_content=source.content,
         source_type=source.source_type,

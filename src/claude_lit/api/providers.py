@@ -161,7 +161,7 @@ def check_providers() -> ProviderReport:
 
 
 def list_options() -> OptionCatalog:
-    """回傳風格 / 詳細程度 / 語言目錄（鍵 → 「名稱 - 說明」）。"""
+    """回傳風格 / 詳細程度 / 語言 / 媒體類型目錄（鍵 → 「名稱 - 說明」）。"""
     config = _load_styles_config()
 
     slide_styles = {
@@ -176,6 +176,11 @@ def list_options() -> OptionCatalog:
     languages = {
         key: info.get("name", key) for key, info in config.get("languages", {}).items()
     }
+    from .media import list_media_types
+
     return OptionCatalog(
-        slide_styles=slide_styles, detail_levels=detail_levels, languages=languages
+        slide_styles=slide_styles,
+        detail_levels=detail_levels,
+        languages=languages,
+        media_types=list_media_types(),
     )

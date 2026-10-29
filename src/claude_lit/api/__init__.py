@@ -16,6 +16,7 @@ from .errors import (
 from .models import (
     DetailLevel,
     Language,
+    MediaType,
     OptionCatalog,
     OutputFormat,
     ProviderReport,
@@ -52,6 +53,7 @@ __all__ = [
     "SourceNotFoundError",
     "DetailLevel",
     "Language",
+    "MediaType",
     "OptionCatalog",
     "OutputFormat",
     "ProviderReport",

@@ -26,7 +26,7 @@ class GuideResult(BaseModel):
 
 
 def build_usage_guide() -> str:
-    """組出完整工具使用說明；風格/詳細度/語言清單注入自 list_options()。"""
+    """組出完整工具使用說明；風格/詳細度/語言/媒體類型清單注入自 list_options()。"""
     catalog = list_options()
     template_path = resolve_resource("templates/prompts/usage_guide.jinja2")
     template = Template(template_path.read_text(encoding="utf-8"))
@@ -41,6 +41,8 @@ def build_usage_guide() -> str:
         slide_styles_block=_block(catalog.slide_styles),
         detail_block=_block(catalog.detail_levels),
         language_block=_block(catalog.languages),
+        media_keys=", ".join(catalog.media_types),
+        media_block=_block(catalog.media_types),
     )
 
 

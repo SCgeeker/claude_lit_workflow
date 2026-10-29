@@ -41,3 +41,10 @@ grounding gate 對「含 Han 字且定位不到」的核心 MUST 依來源決定
 #### Scenario: 章節 cite_key
 - **WHEN** 以 `media_type=textbook`、`cite_key=Smith-2020`、`chapter=3` 生成
 - **THEN** 卡片 ID 為 `Smith-2020-ch03-001` 起連續編號
+
+### Requirement: 改寫核心時保留原文字元
+grounding gate 以原文 span 修正核心（僅差空白／換行連字）時，寫入卡片的核心 MUST 只接合換行連字並塌陷空白，MUST NOT 套用 NFKC 或引號正規化；`normalize()` 僅用於比對。
+
+#### Scenario: 中文全形標點保留
+- **WHEN** 卡片核心「我認為注意力其實是一種預測，而不是一盞探照燈。」逐字出現在原文
+- **THEN** 寫入卡片的核心保留全形「，」與「。」，不被轉為半形

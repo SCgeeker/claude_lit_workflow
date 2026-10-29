@@ -217,7 +217,9 @@ class SlideMaker:
                        slide_count: int = 15,
                        pdf_content: Optional[str] = None,
                        source_type: Optional[str] = "pdf",
-                       custom_requirements: Optional[str] = None) -> str:
+                       custom_requirements: Optional[str] = None,
+                       template_path: Optional[Path] = None,
+                       extra_context: Optional[Dict[str, Any]] = None) -> str:
         """
         生成LLM提示詞
 
@@ -229,6 +231,8 @@ class SlideMaker:
             slide_count: 投影片數量
             pdf_content: PDF內容（可選）
             custom_requirements: 自訂要求（可選）
+            template_path: 本次改用的模板（如媒體模板）；未給時用初始化載入的模板
+            extra_context: 額外渲染變數（如 media profile）
 
         Returns:
             生成的提示詞
@@ -237,7 +241,13 @@ class SlideMaker:
         detail_info = self.get_detail_info(detail_level)
         lang_info = self.get_language_info(language)
 
-        prompt = self.template.render(
+        template = self.template
+        if template_path is not None:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = Template(f.read())
+
+        prompt = template.render(
+            **(extra_context or {}),
             topic=topic,
             slide_count=slide_count,
             style_name=style_info['name'],

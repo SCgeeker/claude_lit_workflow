@@ -16,6 +16,7 @@ from claude_lit.generators import SlideMaker
 from .errors import LLMGenerationError, ProviderUnavailableError
 from .models import SlideRequest, SlideResult
 from .progress import ProgressCallback, ProgressEvent
+from .prompts import slides_template_options, source_kwargs
 from .sources import resolve_source
 
 logger = logging.getLogger("claude_lit_workflow.api.slides")
@@ -84,16 +85,9 @@ def generate_slides(
     maker = SlideMaker(**maker_kwargs)
 
     # 1. 來源解析
-    if request.pdf or request.url or request.from_kb:
+    if request.pdf or request.url or request.from_kb or request.text:
         emit(ProgressEvent(stage="extract", message="正在抽取內容來源..."))
-    source = resolve_source(
-        topic=request.topic,
-        pdf=request.pdf,
-        url=request.url,
-        from_kb=request.from_kb,
-        content=request.content,
-        max_chars=_SLIDES_MAX_CHARS,
-    )
+    source = resolve_source(**source_kwargs(request, _SLIDES_MAX_CHARS))
     topic = source.topic or "簡報"
 
     # 2. Prompt 渲染
@@ -107,6 +101,7 @@ def generate_slides(
         pdf_content=source.content,
         source_type=source.source_type,
         custom_requirements=request.custom_requirements,
+        **slides_template_options(request),
     )
 
     # 3. LLM 呼叫

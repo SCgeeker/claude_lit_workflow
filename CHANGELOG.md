@@ -13,6 +13,19 @@
 > 知識管理（analyze / kb / embeddings / 概念網絡）交由筆記 App 接管、已歸檔停用。
 > 這段期間的詳細變更以 git 歷史與 `openspec/`（specs 為行為真相來源）為準，未逐條回填本檔。
 
+### 新增：多媒體類型模板（openspec `add-media-templates`）
+- `--media {paper,lecture,podcast,blog,textbook,monograph}`：與 `--style` 正交；`paper` 為預設，行為與先前逐字相同
+- `templates/styles/media_profiles.yaml` + `media_slides_template.jinja2` / `media_zettel_template.jinja2`：輸出協定與論文模板一致，解析器與 grounding gate 沿用
+- 卡片類型新增 `claim`（主張）、`example`（例子）
+- `--text`：.txt / .md / .srt / .vtt / .epub（EPUB 僅用標準庫）；逐字稿自動清理（時間碼、填充詞、講者段落、`[hh:mm:ss]` 標記）
+- `--chapter`：教科書／專書以章為單位（略過目錄與內文交叉引用），cite_key 加 `-chNN`
+- `--meta KEY=VALUE`：來源資訊填入標題頁與卡片來源連結
+- grounding：文字來源的中文核心定位不到即抹除（PDF 維持隔離）；逐字稿 sidecar 新增 `timestamp`
+- MCP：`generate_slides` / `generate_zettel` 新增 `text`、`media_type`、`source_meta`、`chapter`、`keep_fillers`；新 resource `styles://media-profiles`；`list_options` 回傳 `media_types`
+
+### 修正
+- grounding gate 以原文 span 改寫核心時不再套用 NFKC：中文全形標點（「，」等）不再被轉成半形
+
 ### 近期（文檔收斂）
 - 公開文檔收斂至雙語 README（`README.md` / `README.en.md`）+ `openspec/`
 - `docs/`、`examples/` 收斂至現役工具，停用功能文檔與範例移出 repo

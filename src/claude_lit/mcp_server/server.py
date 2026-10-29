@@ -12,7 +12,7 @@ API key 只存在伺服器行程，不經協定傳輸。
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import anyio
 import yaml
@@ -57,8 +57,8 @@ load_env_file()
 mcp = FastMCP(
     "claude-lit-workflow",
     instructions=(
-        "學術文獻工作流工具：從 PDF / URL / 主題生成學術投影片（Markdown/PPTX）"
-        "與 Zettelkasten 原子卡片。生成由伺服器端已設定的 LLM 完成，"
+        "學術文獻工作流工具：從 PDF / URL / 文字檔 / 主題生成投影片（Markdown/PPTX）"
+        "與 Zettelkasten 原子卡片；media_type 支援論文、講演與 podcast 逐字稿、網誌、教科書、專書。生成由伺服器端已設定的 LLM 完成，"
         "長時工具（generate_slides / generate_zettel）可能需要數分鐘，"
         "會透過 progress notification 回報進度。"
         "若要由呼叫端 LLM 自行生成，改用 slides-prompt / zettel-prompt 取得完整提示詞。"
@@ -105,6 +105,11 @@ async def generate_slides(
     topic: Optional[str] = None,
     pdf: Optional[str] = None,
     url: Optional[str] = None,
+    text: Optional[str] = None,
+    media_type: str = "paper",
+    source_meta: Optional[Dict[str, str]] = None,
+    chapter: Optional[str] = None,
+    keep_fillers: bool = False,
     style: str = "modern_academic",
     detail: str = "standard",
     language: str = "chinese",
@@ -116,9 +121,13 @@ async def generate_slides(
     custom_requirements: Optional[str] = None,
     ctx: Context = None,
 ) -> SlideResult:
-    """從主題、PDF 或 URL 生成學術投影片。
+    """從主題、PDF、URL 或文字檔生成投影片。
 
-    來源三選一（至少提供 topic、pdf 或 url 其中一項；pdf 與 url 互斥）。
+    來源：至少提供 topic、pdf、url 或 text 其中一項（pdf、url、text 互斥）。
+    text 為伺服器端文字檔路徑（.txt / .md / .srt / .vtt / .epub）。
+    media_type：paper（預設，學術論文）/ lecture / podcast / blog / textbook / monograph（見 list_options）；
+    source_meta 為來源資訊（如 speaker、show、episode、year），填入標題頁；
+    chapter 僅 textbook / monograph（如 "3" 或 "3-5"）。
     style 七選一（見 list_options）；output_format：markdown / pptx / both。
     回傳輸出檔案的絕對路徑清單與 metadata；檔案內容可用 read_output 讀取。
     """
@@ -126,6 +135,11 @@ async def generate_slides(
         topic=topic,
         pdf=pdf,
         url=url,
+        text=text,
+        media_type=media_type,
+        source_meta=source_meta or {},
+        chapter=chapter,
+        keep_fillers=keep_fillers,
         style=style,
         detail=detail,
         language=language,
@@ -143,6 +157,11 @@ async def generate_slides(
 async def generate_zettel(
     pdf: Optional[str] = None,
     url: Optional[str] = None,
+    text: Optional[str] = None,
+    media_type: str = "paper",
+    source_meta: Optional[Dict[str, str]] = None,
+    chapter: Optional[str] = None,
+    keep_fillers: bool = False,
     detail: str = "standard",
     language: str = "chinese",
     domain: str = "Research",
@@ -156,8 +175,13 @@ async def generate_zettel(
     model: Optional[str] = None,
     ctx: Context = None,
 ) -> ZettelResult:
-    """從 PDF 或 URL 生成 Zettelkasten 原子卡片（pdf 與 url 擇一）。
+    """從 PDF、URL 或文字檔生成 Zettelkasten 原子卡片（pdf、url、text 擇一）。
 
+    text 為伺服器端文字檔路徑（.txt / .md / .srt / .vtt / .epub）。
+    media_type：paper（預設）/ lecture / podcast / blog / textbook / monograph，決定卡片類型與引用格式；
+    source_meta 為來源資訊（如 speaker、show、episode、year），填入卡片來源連結；
+    chapter 僅 textbook / monograph，cite_key 自動加 -chNN 後綴。
+    逐字稿（.srt / .vtt）來源的 grounding sidecar 含 timestamp。
     detail 決定卡片數（standard=12、comprehensive=30+，見 list_options）。
     add_to_kb 預設 False（不寫入伺服器本機知識庫）。
     ground 預設 True：驗證每張卡片的核心可逐字回溯原文，定位不到則抹除、
@@ -167,6 +191,11 @@ async def generate_zettel(
     request = ZettelRequest(
         pdf=pdf,
         url=url,
+        text=text,
+        media_type=media_type,
+        source_meta=source_meta or {},
+        chapter=chapter,
+        keep_fillers=keep_fillers,
         detail=detail,
         language=language,
         domain=domain,
@@ -190,7 +219,7 @@ def check_setup() -> ProviderReport:
 
 @mcp.tool()
 def list_options() -> OptionCatalog:
-    """列出投影片風格（7 種）、詳細程度（5 種）、語言模式（3 種）的完整目錄與說明。"""
+    """列出投影片風格（7 種）、詳細程度（5 種）、語言模式（3 種）、媒體類型（6 種）的完整目錄與說明。"""
     return api_list_options()
 
 
@@ -235,6 +264,12 @@ def academic_styles() -> str:
     return _read_resource_file("templates/styles/academic_styles.yaml")
 
 
+@mcp.resource("styles://media-profiles", mime_type="application/yaml")
+def media_profiles() -> str:
+    """6 種媒體類型（論文、講演、podcast、網誌、教科書、專書）的閱讀方式、結構骨架與卡片類型定義"""
+    return _read_resource_file("templates/styles/media_profiles.yaml")
+
+
 @mcp.resource("config://custom-slides", mime_type="text/markdown")
 def custom_slides() -> str:
     """投影片生成的使用者自訂需求"""
@@ -271,6 +306,9 @@ def slides_prompt(
     topic: Optional[str] = None,
     pdf_path: Optional[str] = None,
     url: Optional[str] = None,
+    text_path: Optional[str] = None,
+    media_type: str = "paper",
+    chapter: Optional[str] = None,
     style: str = "modern_academic",
     detail: str = "standard",
     language: str = "chinese",
@@ -281,6 +319,9 @@ def slides_prompt(
         topic=topic,
         pdf=pdf_path,
         url=url,
+        text=text_path,
+        media_type=media_type,
+        chapter=chapter,
         style=style,
         detail=detail,
         language=language,
@@ -293,6 +334,9 @@ def slides_prompt(
 def zettel_prompt(
     pdf_path: Optional[str] = None,
     url: Optional[str] = None,
+    text_path: Optional[str] = None,
+    media_type: str = "paper",
+    chapter: Optional[str] = None,
     detail: str = "standard",
     language: str = "chinese",
     domain: str = "Research",
@@ -302,6 +346,9 @@ def zettel_prompt(
     request = ZettelRequest(
         pdf=pdf_path,
         url=url,
+        text=text_path,
+        media_type=media_type,
+        chapter=chapter,
         detail=detail,
         language=language,
         domain=domain,

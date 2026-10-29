@@ -8,6 +8,10 @@
 # 其他 media_type 改用 media_slides_template / media_zettel_template，
 # 兩者的「輸出協定」（===標題頁=== / ===投影片N=== / ===CARD: id===）與既有模板逐字相同，
 # 以確保 SlideMaker / ZettelMaker 解析器與 grounding gate 不需修改。
+#
+# grounding.cjk_policy：中文核心定位不到時的處置（erase 抹除 / quarantine 隔離待審）。
+# 來源本身優先決定：PDF 一律 quarantine（可能是 CID glyph 抽取失敗）、
+# 文字檔（txt/md/srt/vtt/epub）一律 erase（無抽取失真）；本欄只在 URL 來源時生效。
 
 card_type_catalog:
   concept: "概念：定義、原理、理論構念"
@@ -56,7 +60,7 @@ media_types:
     citation_format: "[[{cite_key}|{speaker} ({year}) 講演]]"
     core_rule: "從逐字稿逐字擷取講者原句（可連續兩句）；保留口語原貌與疑似誤聽字，但不要包含時間標記"
     grounding:
-      cjk_policy: erase          # 文字來源無 CID glyph 問題，中文定位不到即抹除
+      cjk_policy: erase
     recommended_styles: [teaching, modern_academic, case_analysis]
     default_slide_count: 12
 
@@ -167,7 +171,7 @@ media_types:
       - question 卡寫成可自我檢測的問題，「待解問題」欄放提示而非完整答案
       - 優先建立「基於」連結，反映教科書的先備知識順序
     grounding:
-      cjk_policy: quarantine     # PDF 來源仍可能有 CID 抽取問題；EPUB/MD 來源改為 erase
+      cjk_policy: quarantine
     recommended_styles: [teaching, classic_academic]
     default_slide_count: 15
 

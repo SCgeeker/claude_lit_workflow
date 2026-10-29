@@ -96,3 +96,14 @@ class TestGroundCardCJK:
         g = gc.ground_card("量詞「兩」用於成對的事物", src)
         assert g.disposition == "keep"
         assert g.verdict in (gc.EXACT, gc.EXACT_NOSPACE, gc.DRIFTED_MINOR)
+
+
+class TestJoinSpan:
+    def test_joins_line_hyphen_and_collapses_space(self):
+        assert gc.join_span("rational compre-\nhender   model") == "rational comprehender model"
+
+    def test_keeps_fullwidth_punctuation_and_quotes(self):
+        # 寫回卡片的核心須保留原文字元；NFKC 只用於比對
+        raw = "我認為注意力其實是一種預測，而不是「探照燈」。"
+        assert gc.join_span(raw) == raw
+        assert gc.join_span("“quoted”  text") == "“quoted” text"

@@ -161,6 +161,88 @@ class TestZettelCli:
         assert captured["request"].ground is False
 
 
+class TestMediaFlags:
+    """--media / --text / --chapter / --meta 只透傳至核心 Request（spec: cli — 媒體類型旗標）"""
+
+    def _capture(self, monkeypatch, mod, fn_name, result):
+        captured = {}
+        monkeypatch.setattr(
+            mod, fn_name, lambda request, **kw: captured.update(request=request) or result
+        )
+        return captured
+
+    def test_zettel_media_passthrough(self, monkeypatch):
+        captured = self._capture(monkeypatch, generate_zettel_mod, "generate_zettel", _fake_zettel_result())
+        monkeypatch.setattr(sys, "argv", [
+            "zettel", "--text", "ep42.srt", "--media", "podcast",
+            "--meta", "show=科學新聞", "--meta", "episode=EP42", "--keep-fillers",
+            "--no-custom", "--no-add-to-kb",
+        ])
+        assert generate_zettel_mod.main() == 0
+        req = captured["request"]
+        assert req.media_type.value == "podcast"
+        assert str(req.text) == "ep42.srt"
+        assert req.source_meta == {"show": "科學新聞", "episode": "EP42"}
+        assert req.keep_fillers is True
+
+    def test_zettel_default_media_paper(self, monkeypatch):
+        captured = self._capture(monkeypatch, generate_zettel_mod, "generate_zettel", _fake_zettel_result())
+        monkeypatch.setattr(sys, "argv", ["zettel", "--pdf", "p.pdf", "--no-custom", "--no-add-to-kb"])
+        assert generate_zettel_mod.main() == 0
+        assert captured["request"].media_type.value == "paper"
+        assert captured["request"].source_meta == {}
+
+    def test_zettel_text_and_pdf_conflict_exit_2(self, monkeypatch):
+        monkeypatch.setattr(sys, "argv", ["zettel", "--pdf", "p.pdf", "--text", "t.srt"])
+        with pytest.raises(SystemExit) as exc_info:
+            generate_zettel_mod.main()
+        assert exc_info.value.code == 2
+
+    def test_slides_chapter_and_default_count(self, monkeypatch):
+        captured = self._capture(monkeypatch, make_slides_mod, "generate_slides", _fake_slide_result())
+        monkeypatch.setattr(sys, "argv", [
+            "slides", "--pdf", "book.pdf", "--media", "textbook", "--chapter", "3", "--no-custom",
+        ])
+        assert make_slides_mod.main() == 0
+        req = captured["request"]
+        assert req.media_type.value == "textbook" and req.chapter == "3"
+        assert req.slide_count == 15  # textbook profile 的 default_slide_count
+
+    def test_slides_paper_default_count_unchanged(self, monkeypatch):
+        captured = self._capture(monkeypatch, make_slides_mod, "generate_slides", _fake_slide_result())
+        monkeypatch.setattr(sys, "argv", ["slides", "主題", "--no-custom"])
+        assert make_slides_mod.main() == 0
+        assert captured["request"].slide_count == 15
+        assert captured["request"].media_type.value == "paper"
+
+    def test_slides_media_default_count(self, monkeypatch):
+        captured = self._capture(monkeypatch, make_slides_mod, "generate_slides", _fake_slide_result())
+        monkeypatch.setattr(sys, "argv", ["slides", "--text", "post.md", "--media", "blog", "--no-custom"])
+        assert make_slides_mod.main() == 0
+        assert captured["request"].slide_count == 8
+
+    def test_chapter_with_wrong_media_exit_1(self, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", ["slides", "--text", "t.srt", "--media", "lecture", "--chapter", "3"])
+        assert make_slides_mod.main() == 1
+        assert "textbook" in capsys.readouterr().out
+
+    def test_text_with_pdf_conflict_slides_exit_1(self, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", ["slides", "--pdf", "p.pdf", "--text", "t.srt"])
+        assert make_slides_mod.main() == 1
+
+    def test_bad_meta_exit_2(self, monkeypatch):
+        monkeypatch.setattr(sys, "argv", ["slides", "主題", "--meta", "novalue"])
+        with pytest.raises(SystemExit) as exc_info:
+            make_slides_mod.main()
+        assert exc_info.value.code == 2
+
+    def test_list_options_shows_media(self, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", ["slides", "--list-options"])
+        assert make_slides_mod.main() == 0
+        out = capsys.readouterr().out
+        assert "podcast" in out and "monograph" in out
+
+
 class TestSetupCli:
     def _report(self, recommended):
         return ProviderReport(

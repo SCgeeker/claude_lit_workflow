@@ -11,6 +11,7 @@
 
 - **投影片生成** (`uv run slides`): PDF → Markdown 投影片（Obsidian Slides Extended 相容）
 - **原子卡片生成** (`uv run zettel`): PDF / slides → Zettelkasten 卡片
+- **多媒體類型** (`--media`): 講演／Podcast 逐字稿、網誌、教科書、專書（`templates/styles/media_profiles.yaml`）
 - **設定助手** (`uv run setup`): 偵測 LLM 連線、給出設定建議
 - **使用嚮導** (`uv run guide`): 導出工具使用說明，或用指定 LLM 依需求回覆建議指令
 - **MCP server** (`uv run mcp-server`): 以 MCP 曝露工具給任何 LLM 平台（stdio + HTTP）
@@ -68,6 +69,10 @@ uv run slides --pdf paper.pdf --style modern_academic --detail comprehensive
 # Zettel 卡片生成
 uv run zettel --pdf paper.pdf
 uv run zettel --pdf paper.pdf --slides-file output/slides/paper.md
+
+# 其他媒體（逐字稿、網誌、教科書、專書）
+uv run zettel --text ep42.srt --media podcast --meta show=節目 --meta episode=EP42
+uv run slides --pdf book.pdf --media textbook --chapter 3
 
 # 設定檢查
 uv run setup
@@ -146,6 +151,8 @@ Zettel 生成在寫檔前驗證每張卡片的「核心」能否**逐字回溯**
 - **定位到** → 保留，並以原文 span 修正空格/換行連字；旁存 `{card_id}.grounding.json`（verdict、coverage、char_offset、來源指紋）。
 - **定位不到** → **抹除**（不落地、不入庫）。
 - **中文定位不到**（CJK，多為 CID glyph 抽取失敗）→ **隔離**至 `_needs_cjk_check/` 待人工審，不 erase 也不混入正常卡。
+  僅限 PDF 來源；文字檔來源（`--text`）沒有抽取失真，中文定位不到同樣**抹除**。
+- 逐字稿（.srt / .vtt）來源的 sidecar 另含 `timestamp`（由 char_offset 回映字幕時間軸）。
 
 關閉：`uv run zettel ... --no-ground`；MCP `generate_zettel` 傳 `ground=false`。
 `ZettelResult` 回報 `grounded` / `erased` / `flagged`。normalize 規則須與 vault `quote_check.py` 逐字同步（跨 repo 無 CI 強制）。
