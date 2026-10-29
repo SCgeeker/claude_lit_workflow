@@ -1,0 +1,85 @@
+{# 多媒體類型投影片生成模板（草稿） #}
+{# 變數：media（media_profiles.yaml 的單一 profile）、source_meta（使用者提供的來源 metadata）、 #}
+{#       其餘與 journal_club_template.jinja2 相同。 #}
+{# 輸出協定（===標題頁=== / ===投影片N=== / 標題： / 內容： / •）必須與 journal_club_template 逐字一致。 #}
+
+{% if pdf_content %}
+參考{{ media.source_label }}內容（請優先依據以下內容撰寫簡報）：
+{{ pdf_content | truncate(50000) }}
+
+{% endif %}
+{% if source_meta %}
+來源資訊：
+{% for key, value in source_meta.items() if value %}
+- {{ key }}：{{ value }}
+{% endfor %}
+
+{% endif %}
+請為{{ media.source_label }}「{{ topic }}」創建一份簡報，共{{ slide_count }}張投影片。
+
+風格：{{ style_name }}（{{ style_description }}）
+詳細程度：{{ detail_name }}（{{ detail_description }}）
+
+**閱讀此類來源的方式**：
+{{ media.reading_stance }}
+
+{% if language == "chinese" %}
+請使用繁體中文撰寫所有內容。
+{% elif language == "english" %}
+Please write all content in English.
+{% elif language == "bilingual" %}
+請使用繁體中文為主，關鍵術語附英文。
+{% endif %}
+
+{% if custom_requirements %}
+額外要求：
+{{ custom_requirements }}
+{% endif %}
+
+請使用以下格式輸出完整簡報（嚴格遵守格式）：
+
+===標題頁===
+標題：[主標題]
+副標題：[副標題{% if media.metadata_fields %}，可含 {{ media.metadata_fields | join("／") }}{% endif %}]
+
+===投影片1===
+標題：[投影片1的標題]
+內容：
+• [重點1{% if language != "english" %}(關鍵術語附英文){% endif %}]
+• [重點2]
+• [重點3]
+{% if detail_level in ["detailed", "comprehensive"] %}
+• [重點4]
+{% endif %}
+{% if detail_level == "comprehensive" %}
+• [重點5]
+{% endif %}
+
+===投影片2===
+標題：[投影片2的標題]
+內容：
+• [重點1]
+• [重點2]
+• [重點3]
+
+以此類推，直到第{{ slide_count }}張內容投影片。
+
+**建議的簡報骨架**（依{{ media.source_label }}的實際內容取捨與分配張數，不必每項一張）：
+{% for section in media.slide_structure %}
+{{ loop.index }}. {{ section }}
+{% endfor %}
+
+重要要求：
+1. 確保內容邏輯連貫，從淺入深
+2. 避免內容重複
+3. 每張投影片聚焦不同面向
+4. **粗體規則（嚴格遵守）**：
+   - ✅ 僅標記來源領域的**技術性關鍵詞**（如理論名稱、方法名稱、核心構念、模型縮寫）及其近義術語
+   - ✅ 每張投影片最多 1-2 個詞
+   - ❌ 禁止標記結構性次標題，例如：核心論點、主要觀點、結論、討論、例子、小結等通用詞彙
+   - ❌ 一般重點、動詞、形容詞不加粗
+   - ❌ **嚴禁** `**標籤：** 內容` 句型：每個子彈點**禁止**以粗體短語開頭後接冒號，直接撰寫句子內容即可
+5. 嚴格按照格式輸出
+6. 以使用者設定的輸出語言為主；技術性關鍵術語須附英文原文並加粗（如：**情境學習 in-context learning**）
+7. 此類來源的特定要求：
+{{ media.slide_rules }}

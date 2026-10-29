@@ -1,0 +1,141 @@
+{# 多媒體類型 Zettelkasten 原子筆記模板（草稿） #}
+{# 變數：media（media_profiles.yaml 的單一 profile）、source_meta、citation（已依 citation_format 渲染）、 #}
+{#       card_type_catalog，其餘與 zettelkasten_template.jinja2 相同。 #}
+{# 輸出協定（===CARD: id=== 與各欄位標籤）必須與 zettelkasten_template 逐字一致，解析器與 grounding gate 才能沿用。 #}
+
+【重要】這是實際生成任務，不是提供範例說明。以 {{ card_count }} 張為**目標上限**，非硬性配額：只為能從原文**逐字定位**的原子概念出卡；可 grounding 的概念不足 {{ card_count }} 個時，**寧可少出**，**嚴禁**用推斷、臆測或目錄／章節標題湊數。卡片數量服從來源的實質內容。
+
+{% if pdf_content %}
+參考{{ media.source_label }}內容（請優先依據以下內容提取原子化概念）：
+{{ pdf_content }}
+
+{% endif %}
+{% if source_meta %}
+來源資訊：
+{% for key, value in source_meta.items() if value %}
+- {{ key }}：{{ value }}
+{% endfor %}
+
+{% endif %}
+{% if existing_related_cards and existing_related_cards|length > 0 %}
+---
+
+**知識庫現有相關概念** (供建立跨來源連結參考):
+
+{% for card in existing_related_cards %}
+- **[[{{ card.zettel_id }}]]**: {{ card.title }}
+  - 核心: {{ card.core_concept[:150] }}
+  - 類型: {{ card.card_type }}
+  - 來源: {{ card.source_paper }}
+{% endfor %}
+
+如果新概念**基於**、**延伸**、**相關**或**對比**上述概念，請在「連結網絡」中以 `[[zettel_id]]` 標註。
+
+---
+{% endif %}
+請為{{ media.source_label }}「{{ topic }}」創建Zettelkasten原子筆記卡片集，以 {{ card_count }} 張為目標上限。
+
+**閱讀此類來源的方式**：
+{{ media.reading_stance }}
+
+**必須嚴格遵守以下要求**：
+1. **每張卡片都必須是實際可用的卡片**（不是示例）；數量以 {{ card_count }} 張為上限，**只出能從原文逐字定位的概念**，不足則**寧可少出**，**嚴禁**杜撰或把目錄／章節標題當正文出卡
+2. **每張卡片必須有獨立的ID**：從 `{{ cite_key }}-001` 起連續編號（實際張數可少於 {{ card_count }}）
+3. **禁止添加任何「篇幅限制」或「續篇說明」的文字**
+4. **確保輸出完整且可直接使用**，不要用省略號或佔位符
+
+{% if language == "chinese" %}
+請使用繁體中文撰寫所有內容。
+{% elif language == "english" %}
+Please write all content in English.
+{% elif language == "bilingual" %}
+請使用繁體中文為主，關鍵術語附英文。
+{% endif %}
+
+請使用以下格式輸出完整卡片集（嚴格遵守格式）：
+
+===CARD: {{ cite_key }}-001===
+標題: [第一個核心概念的名稱]
+類型: [{{ media.card_type_weights.keys() | join("|") }}]
+核心: [{{ media.core_rule }}]
+標籤: [標籤1], [標籤2], [標籤3]
+
+說明:
+[2-3段詳細說明此概念，包含定義、特性、重要性等。此處可以用中文解釋]
+
+連結網絡:
+- **基於** <- [[{{ cite_key }}-前置ID]]
+- **導向** -> [[{{ cite_key }}-延伸ID1]], [[{{ cite_key }}-延伸ID2]]
+- **相關** <-> [[{{ cite_key }}-相關ID]]
+- **對比** >< [[{{ cite_key }}-對比ID]]
+
+來源脈絡:
+- **文獻**: {{ citation }}
+- **位置**: [{{ media.location_format }}]
+- **情境**: [此概念在來源中的脈絡與論證角色。**此欄位必須填寫**，至少1-2句話]
+
+個人筆記:
+
+🤖 **AI**: [AI生成的批判性思考，至少包含1個 [[{{ cite_key }}-相關ID]] 連結]
+
+✍️ **Human**:
+
+待解問題:
+[此概念引發的待解問題或延伸方向]
+===
+
+**重要提醒**：所有卡片ID必須嚴格遵守格式 `{{ cite_key }}-XXX`，其中XXX為三位數字（001, 002, 003...）。連結中引用其他卡片時，也必須使用完整的破折號格式。
+
+以此類推，直到涵蓋完來源所有可 grounding 的原子概念為止（至多第 {{ card_count }} 張，不足則提前結束）。
+
+**卡片類型定義**（本來源使用以下類型）：
+{% for type_key in media.card_type_weights %}
+- **{{ type_key }}**: {{ card_type_catalog[type_key] }}
+{% endfor %}
+
+**類型配比參考**：{% for type_key, weight in media.card_type_weights.items() %}{{ type_key }} ({{ weight }}%){% if not loop.last %} > {% endif %}{% endfor %}（依實際內容調整）
+
+**連結語義**：
+- **基於 →**: 此概念建立在哪些前置知識上
+- **導向 →**: 此概念延伸出哪些進階概念
+- **相關 ↔**: 與此概念對等相關的其他概念
+- **對比 ⚡**: 與此概念相對或不同的概念（含不同講者／作者的對立觀點）
+
+**重要要求**：
+1. 確保每張卡片可獨立理解（不依賴閱讀順序）
+2. 明確標示概念間的連結關係
+3. 使用一致的ID命名規則（必須包含破折號：{{ cite_key }}-XXX）
+4. **「核心」欄位必須直接從原文逐字擷取**，不可翻譯、改寫或總結：{{ media.core_rule }}
+5. 在「個人筆記」中加入AI生成的批判性思考（標記為 🤖 **AI**），**必須包含至少1個其他卡片的連結**；Human 筆記區塊（✍️ **Human**）留空
+6. 嚴格按照格式輸出
+{% if language == "chinese" %}
+7. 「說明」和「個人筆記」使用繁體中文，但「核心」保持原文
+{% elif language == "bilingual" %}
+7. 「說明」使用繁體中文為主、關鍵術語附英文，但「核心」保持原文
+{% else %}
+7. Write all sections in English, keeping the "Core" as direct quote from source
+{% endif %}
+{% if media.get("extra_card_rules") %}
+8. 此類來源的特定要求：
+{{ media.extra_card_rules }}
+{% endif %}
+
+{% if slides_content %}
+---
+
+**投影片筆記參考**：以粗體標示的概念為優先參考，但仍以原子性與核心程度為主要判斷依據。
+
+{{ slides_content }}
+
+---
+{% endif %}
+
+{% if custom_requirements %}
+---
+
+**使用者特殊需求**：
+
+{{ custom_requirements }}
+
+---
+{% endif %}
