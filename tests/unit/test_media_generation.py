@@ -163,7 +163,7 @@ class TestTextSource:
         book.write_text(f"第一章 緒論\n{body}\n第二章 方法\n{body}方法結尾\n第三章 結果\n{body}", encoding="utf-8")
         src = resolve_source(text=book, media_type="textbook", chapter="2", max_chars=100000)
         assert src.content.startswith("第二章 方法") and "第三章" not in src.content
-        assert any("已選取第 2 章" in w for w in src.warnings)
+        assert any("選取第 2 章" in w for w in src.warnings)
         with pytest.raises(SourceNotFoundError, match="第 9 章"):
             resolve_source(text=book, media_type="textbook", chapter="9", max_chars=100000)
 

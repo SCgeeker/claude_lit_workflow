@@ -218,3 +218,150 @@ class TestChapters:
         # 書眉與章標題同字時不刪章標題
         book = _book("第一章 緒論", "a", "第一章 緒論", "b", "第一章 緒論", "c")
         assert strip_running_heads(book).count("第一章 緒論") == 3
+
+
+def _summerfield_like_book():
+    """模擬 dev-local 回報的專書：目錄與正文都用「N. Title」，第 5 章內文有一列以
+    「Chapter 2.」開頭的交叉引用（斷行後剛好落在行首）"""
+    body = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " * 30  # ~1700 字元
+    toc = ["Contents", "1. Turing’s question", "2. The nature of intelligence",
+           "3. The language of thought", "4. The structure of knowledge", "5. The problem of abstraction"]
+    parts = toc + ["Preface", body]
+    titles = toc[1:]
+    for i, title in enumerate(titles, start=1):
+        parts += [title, f"chapter-{i}-start", body]
+        if i == 5:
+            parts += ["Chapter 2. Recall his theory that the monkey has to ‘grasp the whole layout’ to",
+                      "solve the problem.", body]
+    parts += ["Bibliography", body]
+    return "\n".join(parts)
+
+
+class TestChapterRegression:
+    """dev-local 回報：--chapter 2 在「N. Title」專書上靜默選到第 5 章交叉引用之後的全書內容"""
+
+    def test_numbered_titles_detected_and_cross_reference_ignored(self):
+        chapters = find_chapters(_summerfield_like_book())
+        assert [c.number for c in chapters] == [1, 2, 3, 4, 5]
+        assert chapters[1].heading == "2. The nature of intelligence"
+
+    def test_selects_real_chapter_two(self):
+        text, _ = select_chapters(_summerfield_like_book(), 2, 2)
+        assert text.startswith("2. The nature of intelligence")
+        assert "chapter-2-start" in text and "chapter-3-start" not in text
+
+    def test_cross_reference_line_is_not_a_heading(self):
+        from claude_lit.extractors.chapters import _heading_number
+
+        line = "Chapter 2. Recall his theory that the monkey has to ‘grasp the whole layout’ to"
+        assert _heading_number(line) is None
+        assert _heading_number("Chapter 2. The Nature of Intelligence") == ("en", 2)
+        assert _heading_number("Chapter 7") == ("en", 7)
+
+    def test_numbered_list_items_are_not_headings(self):
+        from claude_lit.extractors.chapters import _heading_number
+
+        assert _heading_number("1. Participants were recruited online.") is None   # 句號結尾
+        assert _heading_number("2. we then computed the mean") is None             # 小寫開頭
+        assert _heading_number("3. The results suggest that, as expected, the") is None  # 未完句
+
+    def test_explicit_chapter_style_wins_over_numbered_sections(self):
+        body = "x" * 700
+        book = "\n".join([
+            "Chapter 1 Origins", "1. Introduction", body, "2. Methods", body,
+            "Chapter 2 Growth", "1. Introduction", body, "2. Results", body,
+        ])
+        chapters = find_chapters(book)
+        assert [(c.number, c.heading) for c in chapters] == [(1, "Chapter 1 Origins"), (2, "Chapter 2 Growth")]
+
+    def test_single_detected_heading_raises(self):
+        book = "Preface\n" + "x" * 3000 + "\nChapter 2. The Nature of Mind\n" + "y" * 3000
+        with pytest.raises(ValueError, match="只偵測到 1 個章標題"):
+            select_chapters(book, 2, 2)
+
+    def test_gap_after_range_raises(self):
+        body = "z" * 700
+        book = _book("第一章 甲", body, "第二章 乙", body, "第四章 丁", body)  # 第三章標題沒抓到
+        with pytest.raises(ValueError, match="不連續"):
+            select_chapters(book, 2, 2)
+
+    def test_oversized_selection_raises(self):
+        book = _book("第一章 甲", "甲" * 600, "第二章 乙", "乙" * 600, "第三章 丙", "丙" * 600,
+                     "第四章 丁", "丁" * 600, "第五章 戊", "戊" * 9000)  # 末章含大量書末內容
+        with pytest.raises(ValueError, match="佔全文"):
+            select_chapters(book, 5, 5)
+        text, _ = select_chapters(book, 2, 2)  # 正常章節不受影響
+        assert text.startswith("第二章 乙")
+
+
+def _pdf_with_outline(path, page_count, outline):
+    """以 PyPDF2 建立空白頁 PDF 並加書籤；outline：[(title, page, [children...])]"""
+    import PyPDF2
+
+    writer = PyPDF2.PdfWriter()
+    for _ in range(page_count):
+        writer.add_blank_page(width=200, height=200)
+
+    def add(items, parent=None):
+        for title, page, children in items:
+            node = writer.add_outline_item(title, page, parent=parent)
+            add(children, node)
+
+    add(outline)
+    with open(path, "wb") as f:
+        writer.write(f)
+    return path
+
+
+class TestPdfOutline:
+    OUTLINE = [
+        ("Title Page", 0, []), ("Contents", 1, []),
+        ("Part I. Foundations", 2, [
+            ("1. Turing’s question", 2, []),
+            ("2. The nature of intelligence", 5, []),
+        ]),
+        ("Part II. Mechanisms", 9, [
+            ("3. The language of thought", 9, []),
+        ]),
+        ("Bibliography", 14, []), ("Index", 17, []),
+    ]
+
+    def test_chapters_and_page_ranges(self, tmp_path):
+        from claude_lit.extractors.chapters import pdf_outline_chapters
+
+        pdf = _pdf_with_outline(tmp_path / "book.pdf", 20, self.OUTLINE)
+        chapters = pdf_outline_chapters(pdf)
+        assert [(c.number, c.start_page, c.end_page) for c in chapters] == [
+            (1, 2, 5), (2, 5, 9), (3, 9, 14),  # 第 3 章止於 Bibliography，不含書末
+        ]
+
+    def test_no_numbered_outline_returns_empty(self, tmp_path):
+        from claude_lit.extractors.chapters import pdf_outline_chapters
+
+        pdf = _pdf_with_outline(tmp_path / "paper.pdf", 4, [("Introduction", 0, []), ("Methods", 2, [])])
+        assert pdf_outline_chapters(pdf) == []
+
+    def test_source_uses_outline_pages(self, tmp_path, monkeypatch):
+        from claude_lit.api import sources as sources_mod
+        from claude_lit.extractors.pdf_extractor import PDFExtractor
+
+        pdf = _pdf_with_outline(tmp_path / "Summerfield-2023.pdf", 20, self.OUTLINE)
+        calls = []
+        monkeypatch.setattr(
+            PDFExtractor, "extract_page_range",
+            lambda self, path, start, end: calls.append((start, end)) or f"pages {start}-{end} 的內容",
+        )
+        monkeypatch.setattr(PDFExtractor, "extract", lambda self, path: pytest.fail("不應抽取全書"))
+        src = sources_mod.resolve_source(pdf=pdf, media_type="monograph", chapter="2", max_chars=100000)
+        assert calls == [(5, 9)]
+        assert src.content == "pages 5-9 的內容"
+        assert src.topic == "Summerfield-2023：2. The nature of intelligence"
+        assert any("書籤" in w and "pp. 6–9" in w for w in src.warnings)
+
+    def test_outline_missing_chapter_raises(self, tmp_path):
+        from claude_lit.api import sources as sources_mod
+        from claude_lit.api.errors import SourceNotFoundError
+
+        pdf = _pdf_with_outline(tmp_path / "book.pdf", 20, self.OUTLINE)
+        with pytest.raises(SourceNotFoundError, match="書籤章號：1, 2, 3"):
+            sources_mod.resolve_source(pdf=pdf, media_type="monograph", chapter="7", max_chars=100000)

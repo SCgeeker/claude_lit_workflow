@@ -11,7 +11,7 @@
 - [x] 2.1 `api/models.py`：`MediaType` enum（paper/lecture/podcast/blog/textbook/monograph，預設 paper）；`SlideRequest`/`ZettelRequest` 加 `media_type`、`text: Optional[Path]`、`source_meta: dict`、`chapter: Optional[str]`；來源互斥規則納入 `text`
 - [x] 2.2 失敗測試 `tests/unit/test_text_extractor.py`：txt/md 原樣；SRT/VTT 去序號與時間碼並產出 offset→時間 對照；`strip_fillers` 只移除獨立填充詞；`insert_time_markers` 標記獨立成行
 - [x] 2.3 實作 `extractors/text_extractor.py`；`api/sources.py` 加 text 分支，依 profile `preprocess` 執行
-- [x] 2.4 `chapter_split`（章標題 regex；PDF 書籤未採用，見 design §9）；`--chapter` 範圍解析；cite_key 加 `-chNN` 後綴
+- [x] 2.4 `chapter_split`（PDF 書籤優先、章標題 regex 後備，見 design §9）；`--chapter` 範圍解析；cite_key 加 `-chNN` 後綴
 
 ## 3. 生成編排
 
@@ -37,3 +37,4 @@
 
 - [x] 6.1 grounding gate 改寫核心時改用 `join_span`（只接合換行連字、塌陷空白），不再套 NFKC——原先會把中文全形標點轉成半形，違反「核心逐字保留原文」
 - [x] 6.2 CLI `--chapter` 用錯（非書籍媒體、範圍顛倒）以 exit 1 與訊息呈現，不丟 traceback
+- [x] 6.3 dev-local 實測修正：`--chapter` 在「N. Title」專書上把行首的「Chapter 2.」交叉引用當成章標題、靜默取到全書結尾——改為 PDF 書籤優先、收緊標題判定、支援「N. Title」、章節邊界不可靠時拋錯；回歸測試以合成文字與 PyPDF2 產生的書籤 PDF 重現

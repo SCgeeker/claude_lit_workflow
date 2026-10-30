@@ -134,6 +134,25 @@ class PDFExtractor:
 
         return text, False
 
+    def extract_page_range(self, pdf_path: str, start: int, end: int) -> str:
+        """抽取 [start, end) 頁（0-based）的文字；供依 PDF 書籤切章使用"""
+        pdf_path = Path(pdf_path)
+        text_parts = []
+        if self.method == "pdfplumber" and PDFPLUMBER_AVAILABLE:
+            with pdfplumber.open(pdf_path) as pdf:
+                for page in pdf.pages[start:end]:
+                    text = page.extract_text()
+                    if text:
+                        text_parts.append(text)
+        else:
+            with open(pdf_path, 'rb') as file:
+                reader = PyPDF2.PdfReader(file)
+                for page in reader.pages[start:end]:
+                    text = page.extract_text()
+                    if text:
+                        text_parts.append(text)
+        return "\n\n".join(text_parts)
+
     def _extract_with_pdfplumber(self, pdf_path: Path) -> str:
         """使用pdfplumber提取文字"""
         text_parts = []

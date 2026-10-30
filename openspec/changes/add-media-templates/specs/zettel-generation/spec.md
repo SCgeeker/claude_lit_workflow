@@ -38,6 +38,14 @@ grounding gate 對「含 Han 字且定位不到」的核心 MUST 依來源決定
 ### Requirement: 長篇來源分章處理
 `media_type` 為 `textbook` 或 `monograph` 時，系統 MUST 接受 `chapter` 參數（單章 `3` 或範圍 `3-5`），只抽取指定章節；cite_key MUST 加 `-chNN` 後綴（如 `Smith-2020-ch03`），使同書不同章的卡片 ID 不衝突。抽取後內容超過上限時 MUST 回報警告。
 
+#### Scenario: 依 PDF 書籤切章
+- **WHEN** PDF 書籤含「2. The nature of intelligence」等帶章號的項目，以 `chapter=2` 生成
+- **THEN** 只抽取該書籤頁碼範圍內的頁面，結尾止於下一個同層書籤
+
+#### Scenario: 章節邊界不可靠時報錯
+- **WHEN** 文字中只偵測到一個章標題，或選取量佔全文比例異常
+- **THEN** 拋出 `SourceNotFoundError` 並列出偵測到的章號，不得靜默以全書剩餘內容生成
+
 #### Scenario: 章節 cite_key
 - **WHEN** 以 `media_type=textbook`、`cite_key=Smith-2020`、`chapter=3` 生成
 - **THEN** 卡片 ID 為 `Smith-2020-ch03-001` 起連續編號

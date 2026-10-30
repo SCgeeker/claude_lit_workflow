@@ -12,7 +12,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel
 
 from claude_lit.extractors import PDFExtractor, TextExtractor, get_extractor
-from claude_lit.extractors.chapters import select_chapters, strip_running_heads
+from claude_lit.extractors.chapters import (
+    pdf_outline_chapters,
+    select_chapters,
+    select_outline_chapters,
+    strip_running_heads,
+)
 
 from .errors import ExtractionError, SourceNotFoundError
 
@@ -42,6 +47,44 @@ def _preprocess_steps(media_type: str) -> set:
     return set(get_media_profile(media_type).get("preprocess", []))
 
 
+def _chapter_label(start: int, end: int) -> str:
+    return f"第 {start} 章" if start == end else f"第 {start}–{end} 章"
+
+
+def _select_by_outline(pdf_path: Path, chapter: str, warnings: List[str]) -> Optional[Tuple[str, str]]:
+    """PDF 有帶章號的書籤時，依書籤頁碼只抽取指定章節；回傳 (文字, 章標題)。無可用書籤回傳 None。
+
+    Raises:
+        SourceNotFoundError: 書籤裡沒有指定的章
+        ExtractionError: 頁面抽取失敗
+    """
+    from .models import parse_chapter_range
+
+    start, end = parse_chapter_range(chapter)
+    chapters = pdf_outline_chapters(pdf_path)
+    if not chapters:
+        return None
+    picked = select_outline_chapters(chapters, start, end)
+    if picked is None:
+        found = ", ".join(str(c.number) for c in chapters)
+        raise SourceNotFoundError(
+            f"PDF 書籤中找不到{_chapter_label(start, end)}（書籤章號：{found}）",
+            hint="以書籤中的章號重新指定 --chapter",
+        )
+    first_page, end_page, title = picked
+    try:
+        text = PDFExtractor(max_chars=_CHAPTER_SCAN_CHARS).extract_page_range(
+            str(pdf_path), first_page, end_page
+        )
+    except Exception as e:
+        raise ExtractionError(f"PDF 頁面抽取失敗：{e}", hint="請確認 PDF 未加密") from e
+    warnings.append(
+        f"已依 PDF 書籤選取{_chapter_label(start, end)}"
+        f"（pp. {first_page + 1}–{end_page}，{len(text)} 字元）"
+    )
+    return text, title
+
+
 def _finalize_long_text(
     text: str,
     *,
@@ -64,8 +107,7 @@ def _finalize_long_text(
             raise SourceNotFoundError(
                 str(e), hint="確認章標題格式（如「第三章」「Chapter 3」），或改用不含 --chapter 的全文模式"
             ) from e
-        label = f"第 {start} 章" if start == end else f"第 {start}–{end} 章"
-        warnings.append(f"已選取{label}（{len(text)} 字元）")
+        warnings.append(f"已依章標題選取{_chapter_label(start, end)}（{len(text)} 字元）")
     if len(text) > max_chars:
         original = len(text)
         text = text[:max_chars]
@@ -139,6 +181,21 @@ def resolve_source(
                 f"找不到 PDF 檔案：{pdf_path}",
                 hint="請確認檔案路徑是否正確",
             )
+        if chapter:
+            by_outline = _select_by_outline(pdf_path, chapter, warnings)
+            if by_outline is not None:
+                text_body, chapter_title = by_outline
+                text_body = _finalize_long_text(
+                    text_body, steps=steps, chapter=None, max_chars=max_chars,
+                    has_timeline=False, warnings=warnings,
+                )
+                return SourceContent(
+                    content=text_body,
+                    topic=topic or f"{pdf_path.stem}：{chapter_title}",
+                    source_type="pdf",
+                    warnings=warnings,
+                )
+
         long_text = bool(chapter or "strip_running_heads" in steps)
         try:
             extractor = PDFExtractor(max_chars=_CHAPTER_SCAN_CHARS if long_text else max_chars)
