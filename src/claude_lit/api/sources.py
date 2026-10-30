@@ -93,6 +93,7 @@ def _finalize_long_text(
     max_chars: int,
     has_timeline: bool,
     warnings: List[str],
+    chapter_selected: bool = False,
 ) -> str:
     """書眉移除 → 章節選取 → 字數上限（截斷保留前段，timeline 位置不受影響）"""
     if "strip_running_heads" in steps and not has_timeline:
@@ -111,7 +112,12 @@ def _finalize_long_text(
     if len(text) > max_chars:
         original = len(text)
         text = text[:max_chars]
-        hint = "；長篇書籍請以 --chapter 指定章節" if "chapter_split" in steps and not chapter else ""
+        if chapter or chapter_selected:
+            hint = "；可縮小 --chapter 範圍（如只取單章）"
+        elif "chapter_split" in steps:
+            hint = "；長篇書籍請以 --chapter 指定章節"
+        else:
+            hint = ""
         warnings.append(f"內容已截斷（{original} → {max_chars} 字元）{hint}")
     return text
 
@@ -187,7 +193,7 @@ def resolve_source(
                 text_body, chapter_title = by_outline
                 text_body = _finalize_long_text(
                     text_body, steps=steps, chapter=None, max_chars=max_chars,
-                    has_timeline=False, warnings=warnings,
+                    has_timeline=False, warnings=warnings, chapter_selected=True,
                 )
                 return SourceContent(
                     content=text_body,

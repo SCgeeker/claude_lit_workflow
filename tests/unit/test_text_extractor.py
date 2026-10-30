@@ -68,6 +68,21 @@ class TestSubtitleParsing:
             (5.0, "開場白"), (70.0, "第二段內容"), (3723.0, "第三段"),
         ]
 
+    def test_transistor_speaker_range_format(self):
+        # dev-local 回報：Transistor 的 transcript.txt 為「[講者] (m:ss - m:ss)」，內容在下一列
+        raw = ("[Kristin] (0:20 - 0:29)\nWelcome back to the show.\n\n"
+               "[Guest] (0:30 - 1:05)\nThanks for having me.\nIt is great to be here.\n\n"
+               "[Kristin] (1:02:03 - 1:02:10)\nThat wraps it up.")
+        cues = parse_timestamped_text(raw)
+        assert cues == [
+            Cue(20.0, "Welcome back to the show.", "Kristin"),
+            Cue(30.0, "Thanks for having me. It is great to be here.", "Guest"),
+            Cue(3723.0, "That wraps it up.", "Kristin"),
+        ]
+        text, timeline = build_transcript(cues)
+        assert "[00:00:30]\nGuest: Thanks for having me." in text
+        assert timestamp_at(timeline, text.index("great to be here")) == "00:00:30"
+
     def test_plain_text_is_not_timestamped(self):
         assert parse_timestamped_text("會議 10:30 開始。\n沒有其他時間碼。") is None
 
@@ -407,6 +422,17 @@ class TestPdfOutline:
         assert src.content == "pages 5-9 的內容"
         assert src.topic == "Summerfield-2023：2. The nature of intelligence"
         assert any("書籤" in w and "pp. 6–9" in w for w in src.warnings)
+
+    def test_truncation_hint_when_chapter_already_given(self, tmp_path, monkeypatch):
+        # dev-local 回報：已指定 --chapter 時，截斷提示卻仍叫使用者「以 --chapter 指定章節」
+        from claude_lit.api import sources as sources_mod
+        from claude_lit.extractors.pdf_extractor import PDFExtractor
+
+        pdf = _pdf_with_outline(tmp_path / "book.pdf", 20, self.OUTLINE)
+        monkeypatch.setattr(PDFExtractor, "extract_page_range", lambda self, path, s, e: "字" * 5000)
+        src = sources_mod.resolve_source(pdf=pdf, media_type="monograph", chapter="1-2", max_chars=1000)
+        hint = next(w for w in src.warnings if "截斷" in w)
+        assert "縮小 --chapter 範圍" in hint and "請以 --chapter 指定" not in hint
 
     def test_outline_missing_chapter_raises(self, tmp_path):
         from claude_lit.api import sources as sources_mod

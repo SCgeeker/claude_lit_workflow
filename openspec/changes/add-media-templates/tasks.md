@@ -30,7 +30,12 @@
 ## 5. 收尾
 
 - [x] 5.1 README / README.en 指令總覽加入媒體類型範例；`templates/CLAUDE.md` 說明 profile
-- [ ] 5.2 以真實樣本各跑一次（一段 YouTube 字幕、一集 podcast 逐字稿、一篇網誌、一章教科書）並記錄 grounded/erased 比例 —— **待辦**：需有 LLM 金鑰的環境
+- [x] 5.2 以真實樣本各跑一次並記錄 grounded/erased 比例——由本機 dev-local 以 rap provider、grounding 開啟執行（2026-10-30）：
+  - blog（Lakens 網誌 URL）：12 張全保留——EXACT 10、DRIFTED_MINOR 2，erased 0
+  - textbook（中文教科書第 1 章 PDF）：保留 7（EXACT_NOSPACE 5、EXACT 1、DRIFTED_MINOR 1）、erased 1、CJK 隔離 2
+  - monograph（Summerfield 2023，`--chapter 2`，依書籤 pp. 49–78）：12 張——EXACT 10、EXACT_NOSPACE 1、DRIFTED_MINOR 1，erased 0
+  - podcast：Buzzsprout 逐字稿（獨立 `[hh:mm:ss]` 行）timeline 與 sidecar 時間戳正確；Transistor 格式（`[講者] (m:ss - m:ss)`）原先無 timeline，已補（6.5）
+  - 未涵蓋：YouTube 字幕（.srt/.vtt）真實樣本；google provider 的卡片數受 main 既有的 max_tokens=4096 截斷影響（非本 change），只看 grounding 品質
 - [x] 5.3 全套件綠（`test_wheel_smoke` 寫死 Windows venv 路徑，Linux 上無法執行；另以 `uv build` 確認新檔已打包）
 
 ## 6. 實作中追加
@@ -39,3 +44,4 @@
 - [x] 6.2 CLI `--chapter` 用錯（非書籍媒體、範圍顛倒）以 exit 1 與訊息呈現，不丟 traceback
 - [x] 6.3 dev-local 實測修正：`--chapter` 在「N. Title」專書上把行首的「Chapter 2.」交叉引用當成章標題、靜默取到全書結尾——改為 PDF 書籤優先、收緊標題判定、支援「N. Title」、章節邊界不可靠時拋錯；回歸測試以合成文字與 PyPDF2 產生的書籤 PDF 重現
 - [x] 6.4 dev-local 複測修正：書籤「N. 章 → N.M 節」結構下「2.1」被當成章號 2、章號重複而放棄書籤——「N.M」不算章號、改取有章號的最淺一層
+- [x] 6.5 dev-local 複測小項：已指定 `--chapter`（含依書籤）時截斷提示改為「可縮小 --chapter 範圍」；`parse_timestamped_text` 支援 Transistor「[講者] (m:ss - m:ss)」格式（產生 timeline 與講者歸屬）

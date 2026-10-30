@@ -39,6 +39,10 @@ Timeline = List[Tuple[int, float]]  # [(字元位置, 秒數)]，依位置遞增
 _TIMECODE = r"(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:[.,](\d{1,3}))?"
 _CUE_TIMING = re.compile(rf"^\s*{_TIMECODE}\s*-->\s*{_TIMECODE}")
 _LINE_TIMESTAMP = re.compile(rf"^\s*[\[(]?{_TIMECODE}[\])]?(?:\s+(.*?))?\s*$")
+# Transistor 等平台：「[講者] (0:20 - 0:29)」講者標籤後接時間範圍，內容在下一列
+_SPEAKER_RANGE = re.compile(
+    rf"^\s*\[([^\]\d][^\]]{{0,39}})\]\s*\(\s*{_TIMECODE}\s*[-–]\s*{_TIMECODE}\s*\)\s*(.*?)\s*$"
+)
 
 
 def _to_seconds(h: Optional[str], m: str, s: str, frac: Optional[str]) -> float:
@@ -119,26 +123,37 @@ def parse_subtitles(raw: str) -> List[Cue]:
 def parse_timestamped_text(raw: str) -> Optional[List[Cue]]:
     """解析「時間碼開頭」的純文字逐字稿（YouTube / podcast 平台複製格式）。
 
-    支援時間碼與文字同列（`[00:12:30] 文字`）或時間碼獨立成列、文字在下一列。
+    支援時間碼與文字同列（`[00:12:30] 文字`）、時間碼獨立成列且文字在下一列，
+    以及講者標籤加時間範圍（`[Kristin] (0:20 - 0:29)`，Transistor 格式）。
     少於 2 個時間碼時視為一般文字，回傳 None。
     """
     cues: List[Cue] = []
     pending: Optional[float] = None
+    pending_speaker: Optional[str] = None
     buffer: List[str] = []
 
     def flush():
         if pending is not None and buffer:
             speaker, text = _clean_cue_text(" ".join(buffer))
             if text:
-                cues.append(Cue(pending, text, speaker))
+                cues.append(Cue(pending, text, pending_speaker or speaker))
 
     stamps = 0
     for line in raw.replace("\r\n", "\n").split("\n"):
+        ranged = _SPEAKER_RANGE.match(line)
+        if ranged:
+            flush()
+            stamps += 1
+            pending = _to_seconds(*ranged.groups()[1:5])
+            pending_speaker = ranged.group(1).strip()
+            buffer = [ranged.group(10)] if ranged.group(10) else []
+            continue
         m = _LINE_TIMESTAMP.match(line)
         if m:
             flush()
             stamps += 1
             pending = _to_seconds(*m.groups()[:4])
+            pending_speaker = None
             buffer = [m.group(5)] if m.group(5) else []
         elif line.strip():
             buffer.append(line.strip())
