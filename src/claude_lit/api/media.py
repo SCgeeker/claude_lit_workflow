@@ -6,6 +6,7 @@ media_profiles.yaml 為單一真相來源：每種媒體的閱讀方式、結構
 """
 
 import re
+import string
 from collections import defaultdict
 from typing import Dict, Optional
 
@@ -74,6 +75,10 @@ def render_citation(
     meta = defaultdict(str, {k: v for k, v in (source_meta or {}).items() if v})
     meta["cite_key"] = cite_key
     fmt = profile.get("citation_format") or "[[{cite_key}|{cite_key}]]"
+    # 只允許 {欄位名}：citation_format 可由使用者覆蓋（網頁服務），禁止屬性／索引存取與格式規格
+    for _, field, spec, conversion in string.Formatter().parse(fmt):
+        if field is not None and (not re.fullmatch(r"\w+", field) or spec or conversion):
+            raise ValueError(f"citation_format 只能使用 {{欄位名}}：{{{field}}}")
     rendered = fmt.format_map(meta)
 
     m = re.fullmatch(r"\[\[([^|\]]*)\|([^\]]*)\]\]", rendered)

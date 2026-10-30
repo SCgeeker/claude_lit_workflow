@@ -14,7 +14,7 @@
 
 ## What Changes
 
-- **新增 REST + SSE 服務層 `claude_lit.web`**（FastAPI）：
+- **新增 REST + SSE 服務層 `claude_lit.web`**（Starlette）：
   - 工作（job）模型：上傳 → 建立 job → 背景執行 → 以 SSE 推送 `ProgressEvent` → 下載結果
   - 端點：`POST /api/jobs`、`GET /api/jobs/{id}`、`GET /api/jobs/{id}/events`（SSE）、
     `GET /api/jobs/{id}/files`、`GET /api/jobs/{id}/download`（zip）、`GET /api/options`、
@@ -48,12 +48,11 @@
 ## Impact
 
 - **新增**：`src/claude_lit/web/`（`app.py`、`jobs.py`、`storage.py`、`auth.py`、`static/`）、
-  `src/claude_lit/cli/web.py`、`deploy/Dockerfile`、`deploy/compose.yaml`、`deploy/Caddyfile`、
-  `tests/unit/test_web_*.py`
+  `src/claude_lit/cli/web.py`、`deploy/Dockerfile`、`deploy/compose.yaml`、`deploy/Caddyfile`、`deploy/README.md`、
+  `examples/quickadd/lit_remote.js`、`tests/unit/test_web_*.py`
 - **修改**：`resource_loader.py`（overlay contextvar）、`pyproject.toml`（`web` optional extra 與 entry point）、
-  `api/models.py`（`ZettelRequest.content`）、`mcp_server/`（token 驗證）
-- **相依**：選配 extra `web = ["fastapi", "uvicorn[standard]", "python-multipart", "sse-starlette"]`；
-  核心安裝不受影響
+  `api/models.py`（`ZettelRequest.content`、`output_root`）、`api/guide.py`（`plan_request`）、`mcp_server/`（token 驗證、`content`）
+- **相依**：選配 extra `web = ["starlette", "uvicorn", "python-multipart"]`——三者皆已隨 `mcp` 安裝，實際零新增套件
 - **相容性**：CLI、QuickAdd（本機模式）、stdio MCP 行為完全不變；`overlay_dir` 未設定時解析順序與現行相同
 - **依賴另一個 change**：上傳逐字稿 / EPUB 需要 `add-media-templates` 的 `text` 來源；
   在它完成前，Web UI 只開放 PDF 與 URL

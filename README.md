@@ -13,6 +13,7 @@
 - **多種媒體** — 除學術論文外，也處理講演／Podcast 逐字稿（.srt / .vtt / .txt）、網誌、教科書與主題專書（`--media`）
 - **使用嚮導** — 用自然語言描述需求，由指定 LLM 回覆建議的 CLI 指令
 - **MCP server** — 以 Model Context Protocol 曝露工具，任何支援 MCP 的 LLM 平台皆可呼叫（stdio + Streamable HTTP）
+- **網頁服務** — 部署到雲端伺服器，從任何裝置的瀏覽器上傳文章、選模板與輸入提示詞（`uv run web`，見 `deploy/`）
 - **多供應商** — Google Gemini / OpenAI / Anthropic / Ollama / NVIDIA NIM
 
 ## 設計定位
@@ -80,6 +81,7 @@ uv run zettel --pdf paper.pdf --no-ground                  # 關閉逐字回溯�
 | `uv run zettel --text ep42.srt --media podcast` | 從 Podcast 逐字稿生成卡片（觀點歸屬講者、sidecar 含時間戳） |
 | `uv run slides --pdf book.pdf --media textbook --chapter 3` | 以章為單位處理教科書／專書 |
 | `uv run mcp-server` | 啟動 MCP server（stdio；`--transport http` 為 Streamable HTTP） |
+| `uv run web` | 啟動網頁服務（需 `uv sync --extra web`；對外部署見 `deploy/README.md`） |
 
 ### 媒體類型（`--media`）
 
@@ -111,7 +113,19 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP（遠端平
 claude mcp add lit-workflow -- uv --directory /path/to/claude_lit_workflow run mcp-server
 ```
 
-提供 5 tools（generate_slides / generate_zettel / check_setup / list_options / read_output）、7 resources（模板、風格、媒體類型、自訂需求、脫敏設定）、2 prompts（渲染完成的提示詞）。生成由伺服器端 LLM 完成，API key 只存在伺服器行程、不經協定傳輸；長時生成會發 progress notification（建議 client timeout ≥ 360 秒）。
+提供 5 tools（generate_slides / generate_zettel / check_setup / list_options / read_output）、7 resources（模板、風格、媒體類型、自訂需求、脫敏設定）、2 prompts（渲染完成的提示詞）。HTTP 模式設定 `WEB_API_TOKEN` 時需帶 bearer token；遠端 client 無法傳伺服器路徑時，`generate_zettel` 可直接以 `content` 傳原文（須附 `cite_key`）。生成由伺服器端 LLM 完成，API key 只存在伺服器行程、不經協定傳輸；長時生成會發 progress notification（建議 client timeout ≥ 360 秒）。
+
+## 網頁服務（雲端部署）
+
+```bash
+uv sync --extra web
+uv run web                                   # 本機 http://127.0.0.1:8000
+cd deploy && docker compose up -d --build    # VPS：Docker + Caddy 自動 HTTPS
+```
+
+- 網頁 UI：上傳 PDF / EPUB / 逐字稿或貼網址 → 選產出、媒體類型、風格 → 輸入提示詞（附加在模板之後，不會改變輸出格式）或用一句話讓 LLM 建議參數 → 即時進度 → 預覽與下載 zip（結構與本機 `output/` 相同）
+- 同一部署也提供 REST API、`/mcp`（與網頁共用 `WEB_API_TOKEN`）與 Obsidian QuickAdd 遠端模式（`examples/quickadd/lit_remote.js`，本機不需 uv）
+- 安全：未設驗證時拒絕對外啟動；金鑰只在伺服器；上傳類型與大小受限；工作資料保留期（預設 7 天）後連同原始檔刪除
 
 ## 模板與設定（cwd 覆蓋機制）
 

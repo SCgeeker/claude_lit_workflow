@@ -27,7 +27,7 @@ from .models import (
     ZettelRequest,
     ZettelResult,
 )
-from .guide import GuideResult, build_usage_guide, suggest_command
+from .guide import GuideResult, PlanResult, build_usage_guide, plan_request, suggest_command
 from .progress import ProgressCallback, ProgressEvent
 from .prompts import render_slides_prompt, render_zettel_prompt
 from .providers import check_providers, list_options
@@ -41,7 +41,9 @@ __all__ = [
     "list_options",
     "build_usage_guide",
     "suggest_command",
+    "plan_request",
     "GuideResult",
+    "PlanResult",
     "render_slides_prompt",
     "render_zettel_prompt",
     "CiteKeyMissingError",

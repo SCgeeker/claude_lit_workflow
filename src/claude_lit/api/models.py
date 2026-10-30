@@ -133,12 +133,13 @@ class SlideResult(BaseModel):
 
 
 class ZettelRequest(BaseModel):
-    """Zettel 卡片生成請求。內容來源：pdf / url / from_kb / text 恰一項。"""
+    """Zettel 卡片生成請求。內容來源：pdf / url / from_kb / text / content 恰一項。"""
 
     pdf: Optional[Path] = None
     url: Optional[str] = None
     from_kb: Optional[int] = None
     text: Optional[Path] = None  # 文字來源：.txt / .md / .srt / .vtt / .epub
+    content: Optional[str] = None  # 直接提供的原文（遠端 MCP client 無法傳路徑時）；需搭配 cite_key
 
     media_type: MediaType = MediaType.paper
     source_meta: Dict[str, str] = {}
@@ -161,13 +162,16 @@ class ZettelRequest(BaseModel):
     provider: str = "auto"
     model: Optional[str] = None
     selection_strategy: str = "balanced"
-    output_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None  # 卡片目錄（完整路徑，最優先）
+    output_root: Optional[Path] = None  # 取代預設的 output/ 根目錄（網頁服務的 job 目錄）
 
     @model_validator(mode="after")
     def _check_sources_and_kb(self):
-        sources = [s for s in (self.pdf, self.url, self.from_kb, self.text) if s is not None]
+        sources = [
+            s for s in (self.pdf, self.url, self.from_kb, self.text, self.content) if s is not None
+        ]
         if len(sources) != 1:
-            raise ValueError("內容來源：pdf、url、from_kb、text 必須恰好提供一項")
+            raise ValueError("內容來源：pdf、url、from_kb、text、content 必須恰好提供一項")
         _check_media_fields(self.media_type, self.chapter)
         if self.cross_link and not self.add_to_kb:
             raise ValueError("cross_link 需要知識庫支援，不能與 add_to_kb=False 併用")

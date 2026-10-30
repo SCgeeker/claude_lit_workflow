@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Lit Workflow</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5d6675; --line: #dde1e7;
+    --accent: #2f5fd0; --accent-text: #ffffff; --ok: #1f7a4d; --err: #b3261e; --warn: #8a5a00;
+    --code: #f0f2f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --card: #1d2128; --text: #e6e9ee; --muted: #9aa3b1; --line: #313844;
+      --accent: #7aa2ff; --accent-text: #0e1420; --ok: #5fcf95; --err: #ff8a80; --warn: #f0c060;
+      --code: #262b33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+           padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 17px; margin: 0; }
+  header .tools { display: flex; gap: 8px; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  section h2 { font-size: 15px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  input, select, textarea, button { font: inherit; color: var(--text); }
+  input[type=text], input[type=number], input[type=url], input[type=password], select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+  textarea { min-height: 90px; resize: vertical; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .check { display: inline-flex; gap: 6px; align-items: center; color: var(--text); font-size: 14px; }
+  button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .55; cursor: default; }
+  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 18px; text-align: center; cursor: pointer; }
+  .drop.over { border-color: var(--accent); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .hint { font-size: 12px; color: var(--muted); }
+  .counter { text-align: right; font-size: 12px; color: var(--muted); }
+  .warn { color: var(--warn); } .err { color: var(--err); } .ok { color: var(--ok); }
+  details summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+  ol.log { margin: 0; padding-left: 20px; max-height: 220px; overflow: auto; font-size: 13px; }
+  ul.files { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+  ul.files li { display: flex; justify-content: space-between; gap: 8px; align-items: center;
+                border-bottom: 1px solid var(--line); padding: 4px 0; overflow-wrap: anywhere; }
+  pre.preview { background: var(--code); padding: 12px; border-radius: 6px; max-height: 360px;
+                overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+  .hidden { display: none !important; }
+  dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); max-width: 420px; width: calc(100% - 32px); }
+</style>
+</head>
+<body>
+<header>
+  <h1 data-i18n="title">文獻工作流</h1>
+  <div class="tools">
+    <button id="lang-btn" type="button">EN</button>
+    <button id="token-btn" type="button" data-i18n="token">金鑰</button>
+  </div>
+</header>
+
+<main>
+  <form id="job-form">
+    <section>
+      <h2 data-i18n="s_source">1. 來源</h2>
+      <div id="drop" class="drop" tabindex="0">
+        <div id="drop-label" data-i18n="drop">拖放或點選檔案（PDF、EPUB、TXT、MD、SRT、VTT）</div>
+        <input id="file" type="file" class="hidden" accept=".pdf,.epub,.txt,.md,.markdown,.srt,.vtt">
+      </div>
+      <p class="muted" data-i18n="or_url">或貼上網址：</p>
+      <input id="url" type="url" placeholder="https://">
+    </section>
+
+    <section>
+      <h2 data-i18n="s_template">2. 產出與模板</h2>
+      <div class="row" style="margin-bottom:12px">
+        <label class="check"><input type="checkbox" id="kind-slides" checked> <span data-i18n="slides">投影片</span></label>
+        <label class="check"><input type="checkbox" id="kind-zettel"> <span data-i18n="zettel">原子卡片</span></label>
+      </div>
+      <div class="grid">
+        <label><span data-i18n="media">媒體類型</span><select id="media_type"></select></label>
+        <label><span data-i18n="style">風格</span><select id="style"></select></label>
+        <label><span data-i18n="detail">詳細程度</span><select id="detail"></select></label>
+        <label><span data-i18n="language">語言</span><select id="language"></select></label>
+        <label><span data-i18n="slide_count">投影片張數</span><input id="slide_count" type="number" min="3" max="60"></label>
+        <label id="chapter-wrap" class="hidden"><span data-i18n="chapter">章節（如 3 或 3-5）</span><input id="chapter" type="text"></label>
+      </div>
+      <p id="style-hint" class="hint"></p>
+      <label style="margin-top:12px"><span data-i18n="meta">來源資訊（每行 key=value，如 speaker=王小明）</span>
+        <textarea id="meta" rows="3" placeholder="speaker=&#10;year="></textarea></label>
+    </section>
+
+    <section>
+      <h2 data-i18n="s_prompt">3. 提示詞</h2>
+      <label><span data-i18n="prompt">額外要求（附加在模板之後，不會改變輸出格式）</span>
+        <textarea id="custom_requirements"></textarea></label>
+      <div id="counter" class="counter"></div>
+      <details>
+        <summary data-i18n="nl_mode">用一句話描述需求，自動設定參數</summary>
+        <textarea id="plan-text" data-i18n-placeholder="nl_placeholder" placeholder="例：把這集 podcast 做成教學風格投影片和卡片"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button type="button" id="plan-btn" data-i18n="nl_go">產生參數</button>
+          <span id="plan-status" class="muted"></span>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <details>
+        <summary data-i18n="advanced">進階設定</summary>
+        <div class="grid">
+          <label><span data-i18n="provider">LLM 供應商</span><select id="provider"></select></label>
+          <label><span data-i18n="model">模型（留空自動）</span><input id="model" type="text"></label>
+          <label><span>cite_key</span><input id="cite_key" type="text" placeholder="Author-Year"></label>
+          <label><span data-i18n="output_format">投影片格式</span>
+            <select id="output_format"><option value="markdown">Markdown</option><option value="pptx">PPTX</option><option value="both">Markdown + PPTX</option></select></label>
+        </div>
+        <div class="row" style="margin:12px 0">
+          <label class="check"><input type="checkbox" id="ground" checked> <span data-i18n="ground">grounding 驗證（核心須逐字出自原文）</span></label>
+          <label class="check"><input type="checkbox" id="keep_fillers"> <span data-i18n="keep_fillers">保留逐字稿填充詞</span></label>
+        </div>
+        <div class="grid">
+          <label><span data-i18n="custom_file">自訂需求檔（.md / .txt）</span><input id="custom_file" type="file" accept=".md,.txt,.markdown"></label>
+          <label><span data-i18n="override">覆蓋媒體設定檔</span><select id="override-name"><option value="" data-i18n="none">（不覆蓋）</option></select></label>
+          <label><span data-i18n="override_file">設定檔（.yaml）</span><input id="override-file" type="file" accept=".yaml,.yml"></label>
+        </div>
+      </details>
+    </section>
+
+    <div class="row">
+      <button type="submit" class="primary" id="submit" data-i18n="submit">開始生成</button>
+      <span id="form-status" class="muted"></span>
+    </div>
+  </form>
+
+  <section id="job-panel" class="hidden">
+    <h2><span data-i18n="progress">進度</span> <span id="job-status" class="muted"></span></h2>
+    <ol id="log" class="log"></ol>
+    <div class="row" style="margin-top:8px"><button type="button" id="cancel-btn" data-i18n="cancel">取消</button></div>
+    <div id="job-error" class="err"></div>
+    <div id="job-warnings" class="warn"></div>
+  </section>
+
+  <section id="result-panel" class="hidden">
+    <h2 data-i18n="results">結果</h2>
+    <div class="row" style="margin-bottom:8px"><button type="button" id="zip-btn" class="primary" data-i18n="zip">下載全部（zip）</button></div>
+    <ul id="files" class="files"></ul>
+    <pre id="preview" class="preview hidden"></pre>
+  </section>
+</main>
+
+<dialog id="token-dialog">
+  <form method="dialog">
+    <p data-i18n="token_prompt">請輸入服務的存取金鑰（WEB_API_TOKEN）。只存在這個瀏覽器。</p>
+    <input id="token-input" type="password" autocomplete="off">
+    <div class="row" style="margin-top:12px; justify-content:flex-end">
+      <button value="cancel" data-i18n="close">關閉</button>
+      <button value="ok" class="primary" data-i18n="save">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const I18N = {
+    zh: {},
+    en: {
+      title: "Literature Workflow", token: "Token", s_source: "1. Source",
+      drop: "Drop or choose a file (PDF, EPUB, TXT, MD, SRT, VTT)", or_url: "Or paste a URL:",
+      s_template: "2. Outputs & template", slides: "Slides", zettel: "Atomic cards", media: "Media type",
+      style: "Style", detail: "Detail", language: "Language", slide_count: "Slide count",
+      chapter: "Chapter (e.g. 3 or 3-5)", meta: "Source info (one key=value per line, e.g. speaker=Jane Doe)",
+      s_prompt: "3. Prompt", prompt: "Extra requirements (appended to the template; cannot change the output format)",
+      nl_mode: "Describe what you want in one sentence and fill in the settings", nl_go: "Suggest settings",
+      nl_placeholder: "e.g. turn this podcast into teaching-style slides and cards",
+      advanced: "Advanced", provider: "LLM provider", model: "Model (blank = auto)", output_format: "Slide format",
+      ground: "Grounding check (card cores must quote the source verbatim)", keep_fillers: "Keep transcript fillers",
+      custom_file: "Custom requirements file (.md / .txt)", override: "Override media profiles", override_file: "Profile file (.yaml)",
+      none: "(none)", submit: "Generate", progress: "Progress", cancel: "Cancel", results: "Results",
+      zip: "Download all (zip)", token_prompt: "Enter the service access token (WEB_API_TOKEN). It is stored only in this browser.",
+      close: "Close", save: "Save", preview: "Preview", download: "Download",
+      need_source: "Choose a file or enter a URL.", need_kind: "Choose slides and/or cards.",
+      submitted: "Submitted", planning: "Thinking…", plan_done: "Settings filled in — review and press Generate.",
+      unauthorized: "Unauthorized — enter the access token.", chars: "chars",
+      st_queued: "queued", st_running: "running", st_succeeded: "done", st_failed: "failed", st_cancelled: "cancelled",
+    },
+  };
+  const ZH = {
+    preview: "預覽", download: "下載", need_source: "請選擇檔案或輸入網址。", need_kind: "請至少選擇投影片或原子卡片。",
+    submitted: "已送出", planning: "思考中…", plan_done: "已填入參數，確認後按「開始生成」。",
+    unauthorized: "未授權：請輸入存取金鑰。", chars: "字",
+    st_queued: "排隊中", st_running: "執行中", st_succeeded: "完成", st_failed: "失敗", st_cancelled: "已取消",
+  };
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  let lang = store.get("lit.lang") === "en" ? "en" : "zh";
+  const zhText = {};
+  document.querySelectorAll("[data-i18n]").forEach(el => { zhText[el.dataset.i18n] = el.textContent; });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => { zhText[el.dataset.i18nPlaceholder] = el.placeholder; });
+  const t = key => (lang === "en" ? I18N.en[key] : (ZH[key] || zhText[key])) || key;
+
+  function applyLang() {
+    document.documentElement.lang = lang === "en" ? "en" : "zh-Hant";
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+      el.placeholder = t(el.dataset.i18nPlaceholder);
+    });
+    $("lang-btn").textContent = lang === "en" ? "中文" : "EN";
+    updateCounter();
+  }
+
+  const $ = id => document.getElementById(id);
+  let options = null, currentJob = null, file = null;
+
+  async function api(path, opts = {}) {
+    const headers = Object.assign({}, opts.headers || {});
+    const token = store.get("lit.token");
+    if (token) headers["Authorization"] = "Bearer " + token;
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    if (res.status === 401) { $("token-dialog").showModal(); throw new Error(t("unauthorized")); }
+    return res;
+  }
+  async function apiJson(path, opts) {
+    const res = await api(path, opts);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const details = (body.details || []).map(d => `${d.field}: ${d.message}`).join("; ");
+      throw new Error([body.error || res.statusText, body.hint, details].filter(Boolean).join(" — "));
+    }
+    return body;
+  }
+
+  function fillSelect(id, mapping, value) {
+    const sel = $(id); sel.innerHTML = "";
+    Object.entries(mapping).forEach(([key, label]) => {
+      const opt = document.createElement("option"); opt.value = key; opt.textContent = `${key} — ${label}`;
+      sel.appendChild(opt);
+    });
+    if (value) sel.value = value;
+  }
+
+  function onMediaChange() {
+    const m = $("media_type").value, d = (options.media_defaults || {})[m] || {};
+    $("slide_count").value = d.default_slide_count || 15;
+    $("chapter-wrap").classList.toggle("hidden", !d.chaptered);
+    if (!d.chaptered) $("chapter").value = "";
+    const rec = (d.recommended_styles || []).join(", ");
+    $("style-hint").textContent = rec ? (lang === "en" ? "Recommended styles: " : "建議風格：") + rec : "";
+  }
+
+  async function loadOptions() {
+    options = await apiJson("/api/options");
+    setStatus("");
+    fillSelect("media_type", options.media_types, "paper");
+    fillSelect("style", options.slide_styles, "modern_academic");
+    fillSelect("detail", options.detail_levels, "standard");
+    fillSelect("language", options.languages, "chinese");
+    const prov = $("provider"); prov.innerHTML = "";
+    options.providers.forEach(p => { const o = document.createElement("option"); o.value = o.textContent = p; prov.appendChild(o); });
+    options.overridable_templates.forEach(p => {
+      const o = document.createElement("option"); o.value = p; o.textContent = p.split("/").pop(); $("override-name").appendChild(o);
+    });
+    onMediaChange(); updateCounter();
+  }
+
+  function setStatus(text, cls = "muted") {
+    $("form-status").textContent = text; $("form-status").className = cls;
+  }
+
+  function updateCounter() {
+    const max = options ? options.limits.max_custom_chars : 2000, n = $("custom_requirements").value.length;
+    $("counter").textContent = `${n} / ${max} ${t("chars")}`;
+    $("counter").classList.toggle("err", n > max);
+  }
+
+  function setFile(f) {
+    file = f || null;
+    $("drop-label").textContent = file ? `📄 ${file.name}` : t("drop");
+    if (file) $("url").value = "";
+  }
+
+  function parseMeta() {
+    const meta = {};
+    $("meta").value.split("\n").forEach(line => {
+      const i = line.indexOf("=");
+      if (i > 0) { const k = line.slice(0, i).trim(), v = line.slice(i + 1).trim(); if (k && v) meta[k] = v; }
+    });
+    return meta;
+  }
+
+  function collectParams() {
+    const kinds = [];
+    if ($("kind-slides").checked) kinds.push("slides");
+    if ($("kind-zettel").checked) kinds.push("zettel");
+    const p = {
+      kinds, media_type: $("media_type").value, style: $("style").value, detail: $("detail").value,
+      language: $("language").value, slide_count: Number($("slide_count").value) || null,
+      output_format: $("output_format").value, provider: $("provider").value,
+      ground: $("ground").checked, keep_fillers: $("keep_fillers").checked, source_meta: parseMeta(),
+    };
+    const optional = { custom_requirements: "custom_requirements", model: "model", cite_key: "cite_key", chapter: "chapter", url: "url" };
+    Object.entries(optional).forEach(([k, id]) => { const v = $(id).value.trim(); if (v) p[k] = v; });
+    return p;
+  }
+
+  function applyPlan(params) {
+    if (params.kinds) { $("kind-slides").checked = params.kinds.includes("slides"); $("kind-zettel").checked = params.kinds.includes("zettel"); }
+    if (params.media_type) { $("media_type").value = params.media_type; onMediaChange(); }
+    ["style", "detail", "language"].forEach(k => { if (params[k]) $(k).value = params[k]; });
+    if (params.slide_count) $("slide_count").value = params.slide_count;
+    if (params.chapter) $("chapter").value = params.chapter;
+    if (params.custom_requirements) $("custom_requirements").value = params.custom_requirements;
+    if (params.source_meta) $("meta").value = Object.entries(params.source_meta).map(([k, v]) => `${k}=${v}`).join("\n");
+    updateCounter();
+  }
+
+  async function submit(ev) {
+    ev.preventDefault();
+    const params = collectParams();
+    if (!file && !params.url) { setStatus(t("need_source"), "err"); return; }
+    if (!params.kinds.length) { setStatus(t("need_kind"), "err"); return; }
+    const fd = new FormData();
+    if (file) fd.append("file", file);
+    fd.append("params", JSON.stringify(params));
+    const cf = $("custom_file").files[0]; if (cf) fd.append("custom_file", cf);
+    const on = $("override-name").value, of = $("override-file").files[0];
+    if (on && of) fd.append("override:" + on, of);
+    $("submit").disabled = true; setStatus("");
+    try {
+      const body = await apiJson("/api/jobs", { method: "POST", body: fd });
+      setStatus(`${t("submitted")} (${body.job_id.slice(0, 8)})`);
+      watchJob(body.job_id);
+    } catch (e) {
+      setStatus(e.message, "err");
+    } finally { $("submit").disabled = false; }
+  }
+
+  function statusLabel(s) { return t("st_" + s); }
+
+  async function watchJob(jobId) {
+    currentJob = jobId;
+    $("job-panel").classList.remove("hidden"); $("result-panel").classList.add("hidden");
+    $("log").innerHTML = ""; $("job-error").textContent = ""; $("job-warnings").textContent = "";
+    $("job-status").textContent = statusLabel("queued"); $("cancel-btn").disabled = false;
+    let since = 0;
+    for (let attempt = 0; attempt < 20 && currentJob === jobId; attempt++) {
+      try {
+        const res = await api(`/api/jobs/${jobId}/events?since=${since}`);
+        const reader = res.body.getReader(), decoder = new TextDecoder();
+        let buf = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buf.indexOf("\n\n")) >= 0) {
+            const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
+            const type = (block.match(/^event: (.*)$/m) || [])[1];
+            const data = (block.match(/^data: (.*)$/m) || [])[1];
+            if (!data) continue;
+            const payload = JSON.parse(data);
+            if (type === "progress") { since = payload.seq; showEvent(payload); }
+            if (type === "end") { finish(payload); return; }
+          }
+        }
+      } catch (e) { $("job-error").textContent = e.message; }
+      await new Promise(r => setTimeout(r, 1500));  // 斷線重連（從 since 之後回放）
+    }
+  }
+
+  function showEvent(ev) {
+    if (ev.stage === "status") { $("job-status").textContent = statusLabel(ev.message); return; }
+    const li = document.createElement("li");
+    li.textContent = (ev.kind ? `[${ev.kind === "slides" ? t("slides") : t("zettel")}] ` : "") + ev.message;
+    $("log").appendChild(li); $("log").scrollTop = $("log").scrollHeight;
+  }
+
+  async function finish(job) {
+    $("job-status").textContent = statusLabel(job.status); $("cancel-btn").disabled = true;
+    $("job-status").className = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "err" : "muted");
+    if (job.error) $("job-error").textContent = [job.error.message, job.error.hint].filter(Boolean).join(" — ");
+    if (job.warnings && job.warnings.length) $("job-warnings").textContent = "⚠️ " + job.warnings.join("；");
+    if (job.status !== "succeeded") return;
+    const { files } = await apiJson(`/api/jobs/${job.id}/files`);
+    const ul = $("files"); ul.innerHTML = "";
+    files.forEach(rel => {
+      const li = document.createElement("li"), name = document.createElement("span");
+      name.textContent = rel; li.appendChild(name);
+      const actions = document.createElement("span"); actions.className = "row";
+      if (/\.(md|json)$/.test(rel)) {
+        const pv = document.createElement("button"); pv.type = "button"; pv.textContent = t("preview");
+        pv.onclick = () => previewFile(job.id, rel); actions.appendChild(pv);
+      }
+      const dl = document.createElement("button"); dl.type = "button"; dl.textContent = t("download");
+      dl.onclick = () => downloadFile(`/api/jobs/${job.id}/files/${encodeURI(rel)}`, rel.split("/").pop());
+      actions.appendChild(dl); li.appendChild(actions); ul.appendChild(li);
+    });
+    $("zip-btn").onclick = () => downloadFile(`/api/jobs/${job.id}/download`, `lit_${job.id.slice(0, 8)}.zip`);
+    $("result-panel").classList.remove("hidden");
+  }
+
+  async function previewFile(jobId, rel) {
+    const res = await api(`/api/jobs/${jobId}/files/${encodeURI(rel)}`);
+    const pre = $("preview"); pre.textContent = await res.text(); pre.classList.remove("hidden");
+  }
+
+  async function downloadFile(path, name) {
+    const res = await api(path);
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
+  async function plan() {
+    const text = $("plan-text").value.trim(); if (!text) return;
+    $("plan-btn").disabled = true; $("plan-status").textContent = t("planning"); $("plan-status").className = "muted";
+    try {
+      const body = await apiJson("/api/plan", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, provider: $("provider").value }),
+      });
+      applyPlan(body.params);
+      $("plan-status").textContent = [t("plan_done"), ...(body.warnings || [])].join(" ");
+    } catch (e) { $("plan-status").textContent = e.message; $("plan-status").className = "err"; }
+    finally { $("plan-btn").disabled = false; }
+  }
+
+  // ── wiring ──
+  const drop = $("drop");
+  drop.onclick = () => $("file").click();
+  drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); setFile(e.dataTransfer.files[0]); };
+  $("file").onchange = e => setFile(e.target.files[0]);
+  $("url").oninput = () => { if ($("url").value) { file = null; $("file").value = ""; $("drop-label").textContent = t("drop"); } };
+  $("media_type").onchange = onMediaChange;
+  $("custom_requirements").oninput = updateCounter;
+  $("job-form").onsubmit = submit;
+  $("plan-btn").onclick = plan;
+  $("cancel-btn").onclick = () => currentJob && api(`/api/jobs/${currentJob}/cancel`, { method: "POST" });
+  $("lang-btn").onclick = () => { lang = lang === "en" ? "zh" : "en"; store.set("lit.lang", lang); applyLang(); if (options) onMediaChange(); };
+  $("token-btn").onclick = () => $("token-dialog").showModal();
+  $("token-dialog").addEventListener("close", () => {
+    if ($("token-dialog").returnValue === "ok") {
+      store.set("lit.token", $("token-input").value.trim()); $("token-input").value = "";
+      loadOptions().catch(e => setStatus(e.message, "err"));
+    }
+  });
+
+  applyLang();
+  loadOptions().catch(e => setStatus(e.message, "err"));
+})();
+</script>
+</body>
+</html>

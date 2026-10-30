@@ -103,6 +103,11 @@ def _resolve_base_cite_key(request: ZettelRequest, source: SourceContent) -> str
     if request.text:
         return Path(request.text).stem
 
+    if getattr(request, "content", None) is not None:
+        raise CiteKeyMissingError(
+            "以 content 提供原文時無法推斷 cite_key", hint="請同時提供 cite_key（如 Barsalou-1999）"
+        )
+
     raise CiteKeyMissingError("無法解析 cite_key", hint="請以 --citekey 手動指定")
 
 

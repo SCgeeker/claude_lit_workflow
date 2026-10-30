@@ -61,7 +61,7 @@
 
 #### Scenario: zip 結構
 - **WHEN** 下載一個 `kinds=["slides","zettel"]` 的成功 job
-- **THEN** zip 內含 `slides/{citekey}_{date}.md` 與 `zettelkasten_notes/zettel_{citekey}_{date}_{model}/zettel_index.md`
+- **THEN** zip 內含 `slides/{來源檔名}_{style}_{date}.md` 與 `zettelkasten_notes/zettel_{cite_key}_{date}/` 下的卡片
 
 ### Requirement: 資料保留
 job 目錄 MUST 在保留期限（預設 7 天，可設定）到期後刪除，包含上傳的原始檔。
@@ -69,3 +69,10 @@ job 目錄 MUST 在保留期限（預設 7 天，可設定）到期後刪除，�
 #### Scenario: 過期清理
 - **WHEN** 清理程序執行時某 job 完成時間早於保留期限
 - **THEN** 該 job 目錄被刪除，`GET /api/jobs/{id}` 回傳 `404`
+
+### Requirement: 自然語言參數提案
+`POST /api/plan` MUST 以 LLM 將自然語言需求轉為參數提案並回傳；提案 MUST 只包含通過驗證的欄位（值不在可用選項內者剔除並列入 `warnings`），且 MUST NOT 建立 job 或執行生成。供應商無法呼叫時 MUST 回傳 `503` 與修復提示。
+
+#### Scenario: 非法值被剔除
+- **WHEN** LLM 回覆的提案含 `style: "fancy"` 與合法的 `media_type: "lecture"`
+- **THEN** 回傳的 `params` 只含 `media_type`，`warnings` 說明 `fancy` 不是可用選項

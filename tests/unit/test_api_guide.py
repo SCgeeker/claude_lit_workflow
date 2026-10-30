@@ -76,3 +76,47 @@ class TestSuggestCommand:
         self._mock_call_llm(monkeypatch, capture)
         suggest_command("需求", provider="nvidia", model="qwen/qwen3-next-80b-a3b-thinking")
         assert capture["kwargs"].get("model") == "qwen/qwen3-next-80b-a3b-thinking"
+
+
+class TestPlanRequest:
+    """自然語言需求 → 經驗證的參數提案（spec: web-service 自然語言模式）"""
+
+    def _llm(self, monkeypatch, output, capture=None):
+        def fake(self, prompt, **kw):
+            if capture is not None:
+                capture["prompt"] = prompt
+            return (output, "google")
+        monkeypatch.setattr(SlideMaker, "call_llm", fake)
+
+    def test_valid_params_pass(self, monkeypatch):
+        capture = {}
+        self._llm(monkeypatch, '好的：\n```json\n{"kinds": ["slides", "zettel"], "media_type": "podcast",'
+                               ' "style": "teaching", "slide_count": 12, "source_meta": {"show": "科學新聞"}}\n```',
+                  capture)
+        result = guide_mod.plan_request("把這集 podcast 做成教學投影片和卡片")
+        assert result.params == {
+            "kinds": ["slides", "zettel"], "media_type": "podcast", "style": "teaching",
+            "slide_count": 12, "source_meta": {"show": "科學新聞"},
+        }
+        assert result.warnings == []
+        assert "JSON" in capture["prompt"] and "podcast" in capture["prompt"]
+
+    def test_invalid_values_dropped_with_warnings(self, monkeypatch):
+        self._llm(monkeypatch, '{"style": "fancy", "slide_count": 500, "chapter": "3",'
+                               ' "media_type": "lecture", "pdf": "/etc/passwd"}')
+        result = guide_mod.plan_request("x")
+        assert result.params == {"media_type": "lecture"}  # 未知欄位 pdf 直接忽略
+        joined = " ".join(result.warnings)
+        assert "fancy" in joined and "500" in joined and "chapter" in joined
+
+    def test_unparseable_output(self, monkeypatch):
+        self._llm(monkeypatch, "抱歉，我不確定")
+        result = guide_mod.plan_request("x")
+        assert result.params == {} and result.warnings
+
+    def test_provider_error(self, monkeypatch):
+        def fail(self, prompt, **kw):
+            raise RuntimeError("no key")
+        monkeypatch.setattr(SlideMaker, "call_llm", fail)
+        with pytest.raises(ProviderUnavailableError):
+            guide_mod.plan_request("x", provider="google")

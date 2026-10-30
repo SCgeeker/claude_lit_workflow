@@ -15,6 +15,7 @@
 - **設定助手** (`uv run setup`): 偵測 LLM 連線、給出設定建議
 - **使用嚮導** (`uv run guide`): 導出工具使用說明，或用指定 LLM 依需求回覆建議指令
 - **MCP server** (`uv run mcp-server`): 以 MCP 曝露工具給任何 LLM 平台（stdio + HTTP）
+- **網頁服務** (`uv run web`): 雲端部署的網頁 UI + REST/SSE job API，掛載 `/mcp`（`src/claude_lit/web/`、`deploy/`）
 
 ### 暫停功能
 
@@ -33,6 +34,7 @@ claude_lit_workflow/
 │   ├── api/               # 核心 API（pydantic Request/Result、錯誤、進度）
 │   ├── cli/               # CLI 薄殼（slides / zettel / setup_check）
 │   ├── mcp_server/        # MCP server（stdio + Streamable HTTP）
+│   ├── web/               # 網頁服務（Starlette：job API、SSE、上傳、驗證、靜態 UI）
 │   ├── generators/        # SlideMaker / ZettelMaker
 │   ├── extractors/        # PDF / URL 抽取
 │   ├── resource_loader.py # 資源解析（cwd 覆蓋 > 套件內建）
@@ -40,6 +42,7 @@ claude_lit_workflow/
 │   └── ...                # utils / knowledge_base / integrations（詳見 src/CLAUDE.md）
 │
 ├── openspec/              # SDD 規格（specs = 行為真相來源）
+├── deploy/                # 雲端部署（Dockerfile、compose.yaml、Caddyfile）
 ├── pyproject.toml         # uv 專案配置（entry points 指向 claude_lit.*）
 ├── output/                # 輸出 → output/CLAUDE.md
 ├── templates/             # 模板（cwd 覆蓋層，可直接編輯）→ templates/CLAUDE.md
@@ -83,7 +86,11 @@ uv run guide "把 paper.pdf 做成教學風格投影片" --provider nvidia
 
 # MCP server（任何支援 MCP 的 LLM 平台皆可串接）
 uv run mcp-server                                  # stdio
-uv run mcp-server --transport http --port 8765     # Streamable HTTP
+uv run mcp-server --transport http --port 8765     # Streamable HTTP（設 WEB_API_TOKEN 時需 bearer token）
+
+# 網頁服務（uv sync --extra web）
+uv run web                                         # 本機 http://127.0.0.1:8000
+cd deploy && docker compose up -d --build          # VPS 部署，見 deploy/README.md
 ```
 
 ### 完整指令說明

@@ -215,5 +215,10 @@ def resolve_source(
             warnings=warnings,
         )
 
-    # 5. 原始內容 / 純主題
-    return SourceContent(content=content, topic=topic, source_type="pdf", warnings=warnings)
+    # 5. 原始內容 / 純主題（直接提供的文字無抽取失真，標為 text）
+    return SourceContent(
+        content=content,
+        topic=topic,
+        source_type="text" if content is not None else "pdf",
+        warnings=warnings,
+    )

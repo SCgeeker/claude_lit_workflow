@@ -76,6 +76,7 @@ temp_*.json
 
 # Large output directories
 output/
+web_data/
 downloads/
 *.zip
 *.tar.gz

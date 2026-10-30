@@ -91,6 +91,12 @@ class TestCitation:
         assert media_api.render_citation(self.PODCAST, "K", {}, fallback="第 42 集") == "[[K|第 42 集]]"
         assert media_api.render_citation(self.PODCAST, "K", {}) == "[[K|K]]"
 
+    def test_format_string_restricted_to_plain_fields(self):
+        # citation_format 可經網頁服務覆蓋：禁止 {x.__class__}、{x[0]}、格式規格
+        for fmt in ("[[{cite_key.__class__}|x]]", "[[{cite_key[0]}|x]]", "[[{cite_key:>99}|x]]", "[[{cite_key!r}|x]]"):
+            with pytest.raises(ValueError):
+                media_api.render_citation({"citation_format": fmt}, "K", {})
+
     def test_chapter_suffix(self):
         assert media_api.chapter_suffix(None) == ""
         assert media_api.chapter_suffix("3") == "-ch03"

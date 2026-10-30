@@ -274,3 +274,34 @@ class TestPaperZeroRegression:
         assert "閱讀此類來源的方式" not in prompt
         assert "類型: [concept|method|finding|question]" in prompt
         assert "[[P-2024.pdf|第一作者 (年份)]]" in prompt
+
+
+class TestContentSourceAndOutputRoot:
+    """ZettelRequest.content（遠端 MCP）與 output_root（網頁服務 job 目錄）"""
+
+    CONTENT = SRT.replace("-->", "")  # 夠長、含卡1 原句
+
+    def test_content_requires_cite_key(self, tmp_path, capture_llm):
+        from claude_lit.api.errors import CiteKeyMissingError
+
+        with pytest.raises(CiteKeyMissingError):
+            zettel_mod.generate_zettel(ZettelRequest(content=self.CONTENT, add_to_kb=False,
+                                                     output_dir=tmp_path / "o"))
+
+    def test_content_is_grounding_source_and_text_policy(self, tmp_path, capture_llm):
+        r = zettel_mod.generate_zettel(ZettelRequest(
+            content=self.CONTENT, cite_key="Pod-2025", add_to_kb=False, output_dir=tmp_path / "o"))
+        assert (r.grounded, r.erased, r.flagged) == (1, 1, 0)  # 直接提供的文字：中文杜撰抹除
+        rec = json.loads((Path(r.output_dir) / "zettel_cards" / "Pod-2025-001.grounding.json").read_text(encoding="utf-8"))
+        assert rec["source_fingerprint"]["sha1"]
+
+    def test_content_exclusive_with_other_sources(self, tmp_path):
+        with pytest.raises(ValidationError):
+            ZettelRequest(content="x", pdf=tmp_path / "a.pdf")
+
+    def test_output_root_replaces_default_output(self, tmp_path, capture_llm, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        r = zettel_mod.generate_zettel(ZettelRequest(
+            content=self.CONTENT, cite_key="Pod-2025", add_to_kb=False, output_root=tmp_path / "job"))
+        assert Path(r.output_dir).parent == (tmp_path / "job" / "zettelkasten_notes").resolve()
+        assert not (tmp_path / "output").exists()

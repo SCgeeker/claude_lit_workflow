@@ -5,6 +5,7 @@
 """
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -149,6 +150,23 @@ class TestGenerateTools:
         assert captured["req"].media_type.value == "textbook"
         assert captured["req"].chapter == "3-5"
         assert captured["req"].source_meta == {}
+
+    @pytest.mark.anyio
+    async def test_generate_zettel_content_passthrough(self, monkeypatch):
+        captured = {}
+
+        def fake(req, **kw):
+            captured["req"] = req
+            return _fake_zettel_result()
+
+        monkeypatch.setattr(server_mod, "api_generate_zettel", fake)
+        async with client_session(server_mod.mcp) as client:
+            result = await client.call_tool(
+                "generate_zettel", {"content": "原文全文……", "cite_key": "X-2025"}
+            )
+            assert not result.isError
+        assert captured["req"].content == "原文全文……"
+        assert captured["req"].pdf is None and captured["req"].url is None
 
     @pytest.mark.anyio
     async def test_chapter_on_wrong_media_is_error(self):
@@ -316,3 +334,28 @@ class TestPrompts:
             text = result.messages[0].content.text
             assert "論文內容片段" in text
             assert "Test-2024" in text  # cite_key 由檔名推斷
+
+
+class TestHttpToken:
+    """mcp-server --transport http + WEB_API_TOKEN（spec: mcp-server — HTTP 傳輸的 token 驗證）"""
+
+    def test_token_required(self, monkeypatch):
+        import uvicorn
+        from starlette.testclient import TestClient
+
+        import claude_lit.mcp_server.__main__ as main_mod
+
+        captured = {}
+        monkeypatch.setenv("WEB_API_TOKEN", "mcp-token-123456")
+        monkeypatch.setattr(uvicorn, "run", lambda app, **kw: captured.update(app=app, **kw))
+        monkeypatch.setattr(sys, "argv", ["mcp-server", "--transport", "http", "--host", "0.0.0.0"])
+        server_mod.mcp._session_manager = None  # 每個 HTTP app 需新的 session manager
+        assert main_mod.main() == 0
+
+        init = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}}
+        accept = {"Accept": "application/json, text/event-stream", "Host": "mcp.example.com"}
+        with TestClient(captured["app"]) as c:
+            assert c.post("/mcp", json=init, headers=accept).status_code == 401
+            ok = c.post("/mcp", json=init, headers={**accept, "Authorization": "Bearer mcp-token-123456"})
+            assert ok.status_code == 200

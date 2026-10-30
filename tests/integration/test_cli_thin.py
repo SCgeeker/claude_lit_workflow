@@ -9,6 +9,7 @@ import claude_lit.cli.slides as make_slides_mod
 import claude_lit.cli.zettel as generate_zettel_mod
 import claude_lit.cli.setup_check as setup_mod
 import claude_lit.cli.guide as guide_mod
+import claude_lit.cli.web as web_mod
 from claude_lit.api.guide import GuideResult
 from claude_lit.api.models import (
     ProviderReport,
@@ -302,3 +303,36 @@ class TestGuideCli:
         out = capsys.readouterr().out
         assert "無法使用供應商" in out
         assert "setup" in out
+
+
+class TestWebCli:
+    """uv run web（spec: cli — 網頁服務入口）"""
+
+    def test_missing_extra_exit_1(self, monkeypatch, capsys):
+        monkeypatch.setattr(web_mod, "_missing_web_dependency", lambda: "uvicorn")
+        monkeypatch.setattr(sys, "argv", ["web"])
+        assert web_mod.main() == 1
+        assert "uv sync --extra web" in capsys.readouterr().out
+
+    def test_public_bind_without_auth_exit_1(self, monkeypatch, capsys):
+        monkeypatch.delenv("WEB_API_TOKEN", raising=False)
+        monkeypatch.delenv("WEB_TRUST_PROXY_AUTH", raising=False)
+        monkeypatch.setattr("claude_lit.utils.config_loader.load_env_file", lambda *a, **k: None)
+        monkeypatch.setattr(sys, "argv", ["web", "--host", "0.0.0.0"])
+        assert web_mod.main() == 1
+        assert "WEB_API_TOKEN" in capsys.readouterr().out
+
+    def test_starts_uvicorn_with_settings(self, monkeypatch, tmp_path):
+        import uvicorn
+
+        captured = {}
+        monkeypatch.setenv("WEB_API_TOKEN", "x" * 16)
+        monkeypatch.setattr("claude_lit.utils.config_loader.load_env_file", lambda *a, **k: None)
+        monkeypatch.setattr(uvicorn, "run", lambda app, **kw: captured.update(app=app, **kw))
+        monkeypatch.setattr(sys, "argv", ["web", "--host", "0.0.0.0", "--port", "9000",
+                                          "--data-dir", str(tmp_path), "--no-mcp", "--workers", "3"])
+        assert web_mod.main() == 0
+        assert captured["host"] == "0.0.0.0" and captured["port"] == 9000
+        settings = captured["app"].state.settings
+        assert settings.max_workers == 3 and settings.enable_mcp is False
+        assert settings.data_dir == tmp_path

@@ -158,6 +158,7 @@ async def generate_zettel(
     pdf: Optional[str] = None,
     url: Optional[str] = None,
     text: Optional[str] = None,
+    content: Optional[str] = None,
     media_type: str = "paper",
     source_meta: Optional[Dict[str, str]] = None,
     chapter: Optional[str] = None,
@@ -175,9 +176,11 @@ async def generate_zettel(
     model: Optional[str] = None,
     ctx: Context = None,
 ) -> ZettelResult:
-    """從 PDF、URL 或文字檔生成 Zettelkasten 原子卡片（pdf、url、text 擇一）。
+    """從 PDF、URL、文字檔或直接提供的原文生成 Zettelkasten 原子卡片（pdf、url、text、content 擇一）。
 
     text 為伺服器端文字檔路徑（.txt / .md / .srt / .vtt / .epub）。
+    content 為原文字串（遠端 client 無法傳伺服器路徑時使用），須同時提供 cite_key；
+    grounding 以 content 本身作為比對原文。
     media_type：paper（預設）/ lecture / podcast / blog / textbook / monograph，決定卡片類型與引用格式；
     source_meta 為來源資訊（如 speaker、show、episode、year），填入卡片來源連結；
     chapter 僅 textbook / monograph，cite_key 自動加 -chNN 後綴。
@@ -192,6 +195,7 @@ async def generate_zettel(
         pdf=pdf,
         url=url,
         text=text,
+        content=content,
         media_type=media_type,
         source_meta=source_meta or {},
         chapter=chapter,

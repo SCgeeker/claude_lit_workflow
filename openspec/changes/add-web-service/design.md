@@ -127,7 +127,29 @@ POST /api/jobs  (multipart)
 | P2 | 自然語言模式 `/api/plan`、遠端 QuickAdd、MCP token 與 `content` 參數 | QuickAdd 遠端模式在無 uv 的電腦上可用 |
 | P3 | 媒體類型（依賴 add-media-templates）、TTL 清理、每日額度 | 上傳 SRT 產出 podcast 卡片 |
 
-## 10. 開放問題
+## 10. 實作決定（與草案的差異）
+
+- **Starlette 取代 FastAPI**：Starlette、uvicorn、python-multipart 已隨 `mcp` 安裝，零新增套件；FastMCP 的
+  Streamable HTTP app 本身就是 Starlette app，可直接掛載。參數驗證沿用核心 pydantic model（`JobParams` → Slide/ZettelRequest）。
+  `web` extra 仍明列三者，避免上游依賴變動時失效。
+- **MCP 的 DNS rebinding 防護**：FastMCP 預設只接受 localhost Host 標頭，經網域存取會被擋。設定 `WEB_ALLOWED_HOSTS`
+  時只放行這些網域；未設定但已有 token／代理驗證時關閉此檢查（rebinding 攻擊拿不到 token）；完全無驗證的本機模式維持預設。
+- **掛載方式**：MCP 子應用自帶 `/mcp` 路由，以 `Mount("/")` 置於路由表最後；`session_manager.run()` 由外層 lifespan 負責。
+  session manager 只能 run 一次，故每次建立 app 時重設（private 屬性 `_session_manager`）。
+- **輸出位置**：投影片以 `output_path` 指定 `output/slides/{來源檔名}_{style}_{日期}.md`；卡片新增 `ZettelRequest.output_root`，
+  保留核心 API 的預設命名（`zettelkasten_notes/zettel_{cite_key}_{日期}/`），只把根目錄換成 job 的 `output/`。
+- **SSE 由前端以 fetch 讀串流**：`EventSource` 無法帶 `Authorization` 標頭；改用 `fetch` + `ReadableStream`，斷線時以 `?since=` 續傳。
+  下載同樣以 fetch 取得 blob，token 不出現在網址中。
+- **自訂需求檔與提示詞**：上傳的 `custom_file` 與表單提示詞合併為 `custom_requirements`（檔案上限 20000 字元、提示詞上限
+  `WEB_MAX_CUSTOM_CHARS`），兩者都只進入模板的附加需求區塊。
+- **per-job 覆蓋只開放 `media_profiles.yaml`**：Jinja 模板以未沙箱化的 `jinja2.Template` 渲染，上傳模板可執行任意程式碼
+  並讀出 LLM 金鑰（共用 token 的實驗室／課堂情境下即為權限提升），故不開放；媒體設定檔以 `yaml.safe_load` 載入、
+  內容只當資料注入模板，安全。`citation_format` 為 Python 格式字串，限制為 `{欄位名}`。日後若要開放模板編輯，
+  須先改用 `jinja2.sandbox.SandboxedEnvironment`。
+- **QuickAdd 遠端模式**：設定改用 QuickAdd 的 user script settings（Base URL、Token、輸出資料夾），不讀 `workflow-config.json`；
+  `requestUrl` 不支援 FormData，multipart 由腳本自行編碼；進度以輪詢 `GET /api/jobs/{id}` 取得。
+
+## 11. 開放問題
 
 - 多人使用（課堂）時，每人一個 token 是否足夠，或需要 OIDC 登入（Google Workspace 學校帳號）。
 - job 狀態用檔案（`job.json`）或 SQLite：單機部署檔案即可；若要水平擴充需改外部儲存。

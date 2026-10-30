@@ -13,6 +13,15 @@
 > 知識管理（analyze / kb / embeddings / 概念網絡）交由筆記 App 接管、已歸檔停用。
 > 這段期間的詳細變更以 git 歷史與 `openspec/`（specs 為行為真相來源）為準，未逐條回填本檔。
 
+### 新增：網頁服務與雲端部署（openspec `add-web-service`）
+- `uv run web`（`uv sync --extra web`）：Starlette 網頁服務——上傳檔案或網址、選模板、輸入提示詞、即時進度（SSE）、預覽與 zip 下載
+- REST job API：`POST /api/jobs`、`/events`（SSE，可回放）、`/files`、`/download`、`/cancel`；`POST /api/plan` 以自然語言產生經驗證的參數提案
+- 安全：bearer token（`WEB_API_TOKEN`）或反向代理驗證（`WEB_TRUST_PROXY_AUTH`）；未設驗證時拒絕對外啟動；上傳類型／檔頭／大小檢查；下載路徑邊界；錯誤訊息移除金鑰；工作資料保留期後刪除
+- 每個工作獨立目錄與 per-job 模板覆蓋層（`resource_loader.use_overlay`，以 contextvar 傳遞）
+- 同一部署掛載 `/mcp`；`mcp-server --transport http` 設 `WEB_API_TOKEN` 時需 bearer token；`generate_zettel` 新增 `content` 參數
+- `deploy/`：Dockerfile、compose.yaml（含 Caddy 自動 HTTPS）、部署說明；`examples/quickadd/lit_remote.js` QuickAdd 遠端模式
+- 核心 API：`ZettelRequest.content`、`ZettelRequest.output_root`；`plan_request()`
+
 ### 新增：多媒體類型模板（openspec `add-media-templates`）
 - `--media {paper,lecture,podcast,blog,textbook,monograph}`：與 `--style` 正交；`paper` 為預設，行為與先前逐字相同
 - `templates/styles/media_profiles.yaml` + `media_slides_template.jinja2` / `media_zettel_template.jinja2`：輸出協定與論文模板一致，解析器與 grounding gate 沿用

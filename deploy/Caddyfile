@@ -1,0 +1,18 @@
+# Caddy 反向代理：自動申請 HTTPS 憑證（LIT_DOMAIN 的 DNS 須指向本機）
+{$LIT_DOMAIN} {
+	# 上傳上限（略大於 WEB_MAX_UPLOAD_MB，容納表單欄位）
+	request_body {
+		max_size 60MB
+	}
+
+	# 選用：改由 Caddy 負責登入（此時 .env 設 WEB_TRUST_PROXY_AUTH=1，可不設 WEB_API_TOKEN）。
+	# 密碼雜湊以 `docker compose run --rm caddy caddy hash-password` 產生。
+	# basic_auth {
+	# 	researcher $2a$14$替換成雜湊值
+	# }
+
+	# 不壓縮：避免緩衝 Server-Sent Events（進度串流）
+	reverse_proxy lit:8000 {
+		flush_interval -1
+	}
+}

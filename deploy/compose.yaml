@@ -1,0 +1,44 @@
+# VPS 部署：網頁服務 + Caddy（自動 HTTPS）
+#
+#   cd deploy
+#   cp ../.env.example .env        # 填入 LLM 金鑰、WEB_API_TOKEN、LIT_DOMAIN
+#   docker compose up -d --build
+#
+# 詳見 deploy/README.md
+
+services:
+  lit:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    env_file: .env
+    environment:
+      WEB_DATA_DIR: /data
+      WEB_ALLOWED_HOSTS: ${LIT_DOMAIN:?請在 .env 設定 LIT_DOMAIN}
+    volumes:
+      - lit-data:/data
+      # 自訂模板（選用）：- ../templates:/app/templates:ro
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8
+    depends_on:
+      - lit
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      LIT_DOMAIN: ${LIT_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  lit-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,7 @@
+# docker build 只需 pyproject.toml、uv.lock、README.md、src/
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+src/**/__pycache__

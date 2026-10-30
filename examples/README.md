@@ -16,6 +16,7 @@ examples/
 ├── zettel/           # uv run zettel 範例
 ├── pdf_extraction/   # PDFExtractor 函式庫用法
 ├── configuration/    # config/settings.yaml 範例
+├── quickadd/         # Obsidian QuickAdd 遠端模式（呼叫雲端網頁服務）
 └── README.md
 ```
 
@@ -67,3 +68,10 @@ cat examples/configuration/settings_example.yaml
 - **快速開始與指令總覽**: [README.md](../README.md) / [README.en.md](../README.en.md)
 - **完整專案指引**: [CLAUDE.md](../CLAUDE.md)
 - **行為規格**: [openspec/](../openspec/)
+
+## Obsidian QuickAdd 遠端模式（quickadd/）
+
+`lit_remote.js` 是 QuickAdd user script：在 vault 內選檔（或輸入網址）→ 選產出與媒體類型 → 上傳到雲端網頁服務 →
+輪詢進度 → 把結果寫回 vault。本機不需安裝 uv。設定 Base URL、Token（`WEB_API_TOKEN`）與輸出資料夾即可，
+部署方式見 `deploy/README.md`。
+

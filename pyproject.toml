@@ -49,6 +49,12 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
 ]
+# 網頁服務（uv run web）；目前皆已隨 mcp 間接安裝，此處明列以免上游變動時失效
+web = [
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+]
 
 [project.scripts]
 # 核心工具
@@ -57,6 +63,7 @@ slides = "claude_lit.cli.slides:main"
 zettel = "claude_lit.cli.zettel:main"
 guide = "claude_lit.cli.guide:main"
 mcp-server = "claude_lit.mcp_server.__main__:main"
+web = "claude_lit.cli.web:main"
 
 # 暫停工具（analyze/kb/embeddings）不入 wheel，改以 `uv run python analyze_paper.py` 執行
 

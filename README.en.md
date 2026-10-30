@@ -10,6 +10,7 @@ A literature workflow toolkit for note-taking apps — turn a PDF, URL, or topic
 
 - **Slide generation** — 7 academic styles, 5 detail levels, 3 languages; outputs Obsidian Slides / Marp–compatible Markdown or PPTX
 - **Atomic card generation** — Zettelkasten cards with cross-paper links and knowledge-base integration
+- **Web service** — deploy to a cloud server; upload articles, pick templates and type prompts from any browser (`uv run web`, see `deploy/`)
 - **Multiple media** — beyond research papers: lecture / podcast transcripts (.srt / .vtt / .txt), blog posts, textbooks and monographs (`--media`)
 - **Usage guide** — describe what you want in natural language; a chosen LLM replies with the exact CLI command
 - **MCP server** — exposes the tools over the Model Context Protocol; any MCP-capable LLM platform can call it (stdio + Streamable HTTP)
@@ -77,6 +78,7 @@ Put any provider's API key in `.env`:
 | `uv run zettel --text ep42.srt --media podcast` | Cards from a podcast transcript (views attributed to speakers; sidecar carries timestamps) |
 | `uv run slides --pdf book.pdf --media textbook --chapter 3` | Process a textbook / monograph one chapter at a time |
 | `uv run mcp-server` | Start the MCP server (stdio; `--transport http` for Streamable HTTP) |
+| `uv run web` | Start the web service (needs `uv sync --extra web`; see `deploy/README.md` for public deployment) |
 
 ### Media types (`--media`)
 
@@ -108,7 +110,19 @@ uv run mcp-server --transport http --port 8765     # Streamable HTTP (remote pla
 claude mcp add lit-workflow -- uv --directory /path/to/claude_lit_workflow run mcp-server
 ```
 
-Provides 5 tools (generate_slides / generate_zettel / check_setup / list_options / read_output), 7 resources (templates, styles, media types, custom requirements, sanitized settings), and 2 prompts (fully rendered prompts). Generation runs on the server-side LLM; the API key stays in the server process and is never sent over the protocol. Long-running generation emits progress notifications (set client tool timeout ≥ 360s).
+Provides 5 tools (generate_slides / generate_zettel / check_setup / list_options / read_output), 7 resources (templates, styles, media types, custom requirements, sanitized settings), and 2 prompts (fully rendered prompts). In HTTP mode, setting `WEB_API_TOKEN` requires a bearer token; remote clients that cannot pass server paths can send the source text to `generate_zettel` via `content` (with a `cite_key`). Generation runs on the server-side LLM; the API key stays in the server process and is never sent over the protocol. Long-running generation emits progress notifications (set client tool timeout ≥ 360s).
+
+## Web Service (Cloud Deployment)
+
+```bash
+uv sync --extra web
+uv run web                                   # local http://127.0.0.1:8000
+cd deploy && docker compose up -d --build    # VPS: Docker + Caddy with automatic HTTPS
+```
+
+- Web UI: upload a PDF / EPUB / transcript or paste a URL → choose outputs, media type and style → type a prompt (appended to the template; it cannot change the output format) or describe what you want in one sentence and let an LLM suggest settings → live progress → preview and download a zip (same layout as the local `output/`)
+- The same deployment also serves a REST API, `/mcp` (sharing `WEB_API_TOKEN` with the web UI) and an Obsidian QuickAdd remote mode (`examples/quickadd/lit_remote.js`, no local uv needed)
+- Safety: refuses to start on a public address without auth; API keys stay on the server; upload types and sizes are restricted; job data, including the uploaded originals, is deleted after the retention period (default 7 days)
 
 ## Templates & Config (cwd Override)
 

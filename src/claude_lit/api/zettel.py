@@ -55,6 +55,8 @@ def _source_fingerprint(request: "ZettelRequest") -> dict:
         fp["text_name"] = file_path.name
     elif request.url:
         fp["url"] = request.url
+    elif request.content is not None:
+        fp["sha1"] = hashlib.sha1(request.content.encode("utf-8")).hexdigest()
     if file_path is not None:
         try:
             fp["sha1"] = hashlib.sha1(file_path.read_bytes()).hexdigest()
@@ -391,7 +393,8 @@ def generate_zettel(
     if request.output_dir:
         output_dir = Path(request.output_dir)
     else:
-        output_dir = Path(f"output/zettelkasten_notes/zettel_{cite_key}_{date_str}")
+        root = Path(request.output_root) if request.output_root else Path("output")
+        output_dir = root / "zettelkasten_notes" / f"zettel_{cite_key}_{date_str}"
 
     paper_info = _build_paper_info(request, source, cite_key)
     result = zettel_maker.generate_zettelkasten(
