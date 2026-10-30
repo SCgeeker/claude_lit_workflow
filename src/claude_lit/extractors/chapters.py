@@ -221,8 +221,8 @@ def select_chapters(text: str, start: int, end: int) -> Tuple[str, List[Chapter]
 _OUTLINE_TITLE = re.compile(
     r"^\s*(?:"
     r"第\s*(?P<zh>[0-9０-９零〇一二兩三四五六七八九十百]+)\s*章"
-    r"|(?:chapter\s+)(?P<word>\d+|[ivxlc]+)\b"
-    r"|(?P<num>\d{1,2})(?:[.:]|\s)\s*\S"
+    r"|(?:chapter\s+)(?P<word>\d+|[ivxlc]+)\b(?!\.\d)"
+    r"|(?P<num>\d{1,2})(?!\.\d)(?:[.:]|\s)\s*\S"  # 「2.1 小節」不是章號
     r")",
     re.IGNORECASE,
 )
@@ -240,11 +240,13 @@ def _outline_number(title: str) -> Optional[int]:
     return int(m.group("num"))
 
 
-def pdf_outline_chapters(pdf_path: Path, max_depth: int = 2) -> List[OutlineChapter]:
-    """讀取 PDF 書籤中帶章號的項目（最多兩層，容納「Part → Chapter」結構）與其頁碼範圍。
+def pdf_outline_chapters(pdf_path: Path, max_depth: int = 3) -> List[OutlineChapter]:
+    """讀取 PDF 書籤中的章節與其頁碼範圍。
 
-    章的結尾頁 = 書籤順序中下一個同層或更上層項目的起始頁（如下一章、Bibliography、Index）。
-    帶章號的書籤少於兩個、或讀取失敗時回傳空清單（呼叫端改用文字判斷）。
+    書籤常見結構是「N. 章 → N.M 節」或「Part → 章 → 節」：「N.M」項目不算章號，
+    並只採用「有至少兩個帶章號項目」的最淺一層，所以小節與各部標題不會混進來。
+    章的結尾頁 = 書籤順序中下一個同層或更上層項目的起始頁（如下一章、References、Index）。
+    找不到可用的章節層、同一層內章號重複（各部各自重編）或讀取失敗時回傳空清單（呼叫端改用文字判斷）。
     """
     try:
         import PyPDF2
@@ -269,17 +271,26 @@ def pdf_outline_chapters(pdf_path: Path, max_depth: int = 2) -> List[OutlineChap
     except Exception:
         return []
 
+    numbered = [(i, depth, _outline_number(title)) for i, (depth, title, _) in enumerate(entries)]
+    numbered = [(i, depth, n) for i, depth, n in numbered if n is not None]
+    depths = sorted({depth for _, depth, _ in numbered})
+    chapter_depth = next(
+        (d for d in depths if sum(1 for _, depth, _ in numbered if depth == d) >= 2), None
+    )
+    if chapter_depth is None:
+        return []
+
     chapters: List[OutlineChapter] = []
-    for i, (depth, title, page) in enumerate(entries):
-        number = _outline_number(title)
-        if number is None:
+    for i, depth, number in numbered:
+        if depth != chapter_depth:
             continue
+        _, title, page = entries[i]
         end = next((p for d, _, p in entries[i + 1:] if d <= depth and p > page), page_count)
         chapters.append(OutlineChapter(number, title, page, end))
 
     numbers = [c.number for c in chapters]
-    if len(chapters) < 2 or len(set(numbers)) != len(numbers):
-        return []  # 章號重複多半是各部（Part）各自重編，或書籤不是章節目錄
+    if len(set(numbers)) != len(numbers):
+        return []  # 同一層章號重複：多半是各部（Part）各自重編，章號無法對應
     return chapters
 
 

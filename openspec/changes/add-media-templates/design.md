@@ -137,7 +137,8 @@ LLM 輸出協定是解析器、grounding gate、Markdown 輸出模板、vault �
 
 - **EPUB 不需額外依賴**：以 `zipfile` + `xml.etree` + `html.parser` 依 OPF spine 順序抽取，不引入 `ebooklib`。
 - **章節偵測：PDF 書籤優先，章標題列為後備**（初版只用章標題，dev-local 以 Summerfield 2023 實測發現會靜默選錯，已修正）：
-  - PDF 書籤含帶章號的項目（「2. Title」「Chapter 2」「第二章」，最多兩層以容納 Part → Chapter）時，依書籤頁碼只抽取該章頁面；
+  - PDF 書籤含帶章號的項目（「2. Title」「Chapter 2」「第二章」）時，依書籤頁碼只抽取該章頁面。「N.M 小節」不算章號，
+    只採用「有至少兩個帶章號項目」的最淺一層（容納「N. 章 → N.M 節」與「Part → 章 → 節」），同一層章號重複時才放棄書籤；
     章的結尾為書籤順序中下一個同層或更上層項目（下一章、Bibliography、Index），不含書末內容。書籤沒有指定章號時直接報錯。
   - 無可用書籤時以章標題列判定（PDF / EPUB / 文字檔共用）：中文「第 X 章」須接空白／標點／行尾；英文「Chapter N」之後若有文字，
     須像標題（≤60 字元、≤10 詞、大寫開頭、無句中斷句、不以 to／the／of 等功能詞結尾）——排除斷行後落在行首的內文引用；

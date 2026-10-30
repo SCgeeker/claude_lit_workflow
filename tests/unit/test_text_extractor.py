@@ -335,6 +335,56 @@ class TestPdfOutline:
             (1, 2, 5), (2, 5, 9), (3, 9, 14),  # 第 3 章止於 Bibliography，不含書末
         ]
 
+    # dev-local 回報：Summerfield (2023) 的書籤是「N. 章 → N.M 節」，「2.1」被當成章號 2 →
+    # 章號重複 → 書籤路徑整個放棄、退回文字判斷
+    SECTIONED = [
+        ("Title Page", 0, []), ("Contents", 1, []),
+        ("1. Turing’s question", 3, [("1.1 Machines", 3, []), ("1.2 Minds", 6, [])]),
+        ("2. The nature of intelligence", 10, [
+            ("2.1 The polymathic principle", 10, []), ("2.2 Lab smarts and street smarts", 13, []),
+        ]),
+        ("3. The language of thought", 18, [("3.1 Symbols", 18, [])]),
+        ("References", 25, []), ("Index", 28, []),
+    ]
+
+    def test_sections_are_not_chapters(self, tmp_path):
+        from claude_lit.extractors.chapters import _outline_number, pdf_outline_chapters
+
+        assert _outline_number("2.1 The polymathic principle") is None
+        assert _outline_number("2. The nature of intelligence") == 2
+        assert _outline_number("Chapter 2.1 Overview") is None
+        pdf = _pdf_with_outline(tmp_path / "book.pdf", 30, self.SECTIONED)
+        chapters = pdf_outline_chapters(pdf)
+        assert [(c.number, c.start_page, c.end_page) for c in chapters] == [
+            (1, 3, 10), (2, 10, 18), (3, 18, 25),  # 第 3 章止於 References
+        ]
+
+    def test_sectioned_outline_used_by_source(self, tmp_path, monkeypatch):
+        from claude_lit.api import sources as sources_mod
+        from claude_lit.api.errors import SourceNotFoundError
+        from claude_lit.extractors.pdf_extractor import PDFExtractor
+
+        pdf = _pdf_with_outline(tmp_path / "book.pdf", 30, self.SECTIONED)
+        calls = []
+        monkeypatch.setattr(PDFExtractor, "extract_page_range",
+                            lambda self, path, start, end: calls.append((start, end)) or "內容")
+        monkeypatch.setattr(PDFExtractor, "extract", lambda self, path: pytest.fail("不應退回全書抽取"))
+        sources_mod.resolve_source(pdf=pdf, media_type="monograph", chapter="2", max_chars=10000)
+        sources_mod.resolve_source(pdf=pdf, media_type="monograph", chapter="2-3", max_chars=10000)
+        assert calls == [(10, 18), (10, 25)]
+        with pytest.raises(SourceNotFoundError, match="書籤章號：1, 2, 3"):
+            sources_mod.resolve_source(pdf=pdf, media_type="monograph", chapter="9", max_chars=10000)
+
+    def test_parts_renumbering_within_level_returns_empty(self, tmp_path):
+        from claude_lit.extractors.chapters import pdf_outline_chapters
+
+        renumbered = [
+            ("Part I", 0, [("1. Alpha", 0, []), ("2. Beta", 3, [])]),
+            ("Part II", 6, [("1. Gamma", 6, []), ("2. Delta", 9, [])]),
+        ]
+        pdf = _pdf_with_outline(tmp_path / "parts.pdf", 12, renumbered)
+        assert pdf_outline_chapters(pdf) == []  # 章號無法對應，改走文字判斷
+
     def test_no_numbered_outline_returns_empty(self, tmp_path):
         from claude_lit.extractors.chapters import pdf_outline_chapters
 
